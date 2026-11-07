@@ -64,9 +64,32 @@ function shell() {
   count();
 }
 const row = ([id, n, note, p]) => `<button class="row" type="button" data-id="${id}" aria-pressed="false"><span class="n">${esc(n)}${note ? `<small>${esc(note)}</small>` : ''}</span>${p ? `<span class="p">${esc(p)}</span>` : ''}${PLUS}</button>`;
+function smooth() {
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  const s = document.createElement('script');
+  s.src = 'assets/lenis.min.js';
+  s.onload = () => {
+    const lenis = new Lenis({ lerp: .09, wheelMultiplier: .9 });
+    const raf = t => { lenis.raf(t); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+  };
+  document.head.append(s);
+}
+function reveal() {
+  if (!('IntersectionObserver' in window)) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.documentElement.classList.add('anim');
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  $$('.head,.big a,.steps h2,.step,.q,.pay p,.faqs h2,.faq,.mapbox,.addr,.end h2,.end .btn').forEach((el, i) => {
+    el.classList.add('rv');
+    el.style.transitionDelay = `${(i % 3) * 70}ms`;
+    io.observe(el);
+  });
+}
 function home() {
   const b = $('.morebtn');
   b.onclick = () => { $('.quotes').classList.add('all'); b.hidden = true; };
+  reveal();
 }
 function prices() {
   const box = $('#price');
@@ -120,4 +143,5 @@ function book() {
 }
 function visit() { $('.live').textContent = openText(); }
 shell();
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) smooth();
 ({ index: home, prices, book, visit }[document.body.dataset.page] || (() => {}))();
