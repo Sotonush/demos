@@ -62,9 +62,8 @@ function shell() {
   const logo = '<img src="img/logo.png" alt="MarAs Beauty" width="1000" height="376">';
   document.body.insertAdjacentHTML('afterbegin', `<div class="demo">Демо-версия для MarAs Beauty. <a href="owner.html">Как это работает</a></div>
   <header class="top"><div class="wrap"><a class="logo" href="index.html">${logo}</a>
-  <nav class="links" aria-label="Разделы">${[['index', 'Главная'], ['prices', 'Услуги'], ['visit', 'Контакты']].map(([k, t]) => `<a href="${k}.html"${cur(k)}>${t}</a>`).join('')}</nav>
-  <a class="btn sm" href="book.html">Запись<span class="cnt" hidden>0</span></a></div></header>`);
-  document.body.insertAdjacentHTML('beforeend', `<footer class="foot"><div class="wrap"><div><img src="img/logo-light.png" alt="MarAs Beauty" width="1000" height="376" loading="lazy"></div><div>Гвардейская улица, 24/1, Кара-Балта<br>Каждый день 09:00–19:00</div><div><a href="https://wa.me/${WA}">WhatsApp</a><a href="${IG}">Instagram</a><a href="https://2gis.kg/kara-balta/firm/70000001110733158">2ГИС</a></div></div></footer>
+  <nav class="links" aria-label="Разделы">${[['index', 'Главная'], ['prices', 'Услуги'], ['book', 'Запись'], ['visit', 'Контакты']].map(([k, t]) => `<a href="${k}.html"${cur(k)}>${t}${k === 'book' ? '<span class="cnt" hidden>0</span>' : ''}</a>`).join('')}</nav></div></header>`);
+  document.body.insertAdjacentHTML('beforeend', `<footer class="foot"><div class="wrap"><p>Гвардейская улица, 24/1, Кара-Балта</p><p><a href="https://wa.me/${WA}">WhatsApp</a><a href="${IG}">Instagram</a><a href="https://2gis.kg/kara-balta/firm/70000001110733158">2ГИС</a></p></div></footer>
   <nav class="tabs" aria-label="Быстрые разделы">${[['index', 'Главная'], ['prices', 'Услуги'], ['book', 'Запись'], ['visit', 'Контакты']].map(([k, t]) => `<a href="${k}.html"${cur(k)}>${t}${k === 'book' ? '<span class="cnt" hidden>0</span>' : ''}</a>`).join('')}</nav>`);
   count();
 }
