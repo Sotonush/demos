@@ -18,7 +18,7 @@ function shell() {
 }
 
 function reveal() {
-  const els = $$('.card,.plant,.q,.combo,.facts,fieldset');
+  const els = $$('.grid .card,.combo,.split,fieldset');
   if (!('IntersectionObserver' in window) || !motion) return;
   els.forEach(e => e.classList.add('reveal'));
   const io = new IntersectionObserver(es => es.forEach(e => {
@@ -41,13 +41,33 @@ function home() {
   };
   show(0);
   if (motion) setInterval(() => { if (!document.hidden) show(i + 1); }, 3200);
+  reviews();
+}
+
+function reviews() {
+  const track = $('.quotes');
+  const [prev, next] = $$('.arrows button');
+  const sync = () => {
+    prev.disabled = track.scrollLeft <= 2;
+    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+  };
+  const step = dir => {
+    const q = $('.q', track);
+    track.scrollBy({ left: dir * (q.offsetWidth + parseFloat(getComputedStyle(track).columnGap)), behavior: motion ? 'smooth' : 'auto' });
+  };
+  prev.onclick = () => step(-1);
+  next.onclick = () => step(1);
+  track.addEventListener('scroll', sync, { passive: true });
+  addEventListener('resize', sync);
+  sync();
 }
 
 function catalog() {
   const set = f => {
     $$('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.f === f));
-    $$('#grid .card').forEach(c => { c.hidden = f !== 'all' && c.dataset.k !== f; });
-    $('.combo').hidden = f === 'p';
+    $$('#grid .card').forEach(c => {
+      c.hidden = f === 'all' ? !!c.dataset.show : (c.dataset.k || c.dataset.show) !== f;
+    });
   };
   $('.seg').onclick = e => { const b = e.target.closest('button'); if (b) set(b.dataset.f); };
   if (location.hash === '#plants') set('p');
