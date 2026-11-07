@@ -85,7 +85,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.23,1,.32,1)';
-const HEART = '<svg class="heart" viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21S1 14 1 6.8A5.8 5.8 0 0 1 12 4.2 5.8 5.8 0 0 1 23 6.8C23 14 12 21 12 21z"/></svg>';
+const PLUS = '<svg class="plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h14M10 3v14"/></svg>';
 let mem = [];
 const cart = {
   get() { try { return JSON.parse(localStorage.getItem('slubovyu-order') || '[]').filter(id => ALL[id]); } catch { return mem; } },
@@ -120,31 +120,26 @@ function shell() {
   count();
 }
 function reveal() {
-  $$('.q,.lead,.gal .stamp,.blk,.card,.letter').forEach(el => {
-    const i = [...el.parentElement.children].indexOf(el);
-    el.classList.add('reveal');
-    el.style.transitionDelay = `${Math.min(i % 4, 3) * 55}ms`;
-  });
-  const els = $$('.reveal');
-  if (!('IntersectionObserver' in window)) return els.forEach(e => e.classList.add('in'));
+  if (!motion || !('IntersectionObserver' in window)) return;
+  const els = $$('.svc,.strip,.lead,.intro h2,.page h1,.grp');
+  els.forEach(e => e.classList.add('reveal'));
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;
     e.target.classList.add('in'); io.unobserve(e.target);
-    setTimeout(() => { e.target.style.transitionDelay = ''; }, 1000);
-  }), { rootMargin: '0px 0px -6% 0px' });
+  }), { rootMargin: '0px 0px -8% 0px' });
   els.forEach(e => io.observe(e));
 }
-const row = ([id, n, note, p]) => `<button class="row" data-id="${id}" aria-pressed="false"><span class="n">${esc(n)}${note ? `<small>${esc(note)}</small>` : ''}</span><span class="p${p === ASK ? ' ask' : ''}">${esc(p)}</span>${HEART}</button>`;
+const row = ([id, n, note, p]) => `<button class="row" data-id="${id}" aria-pressed="false"><span class="n">${esc(n)}${note ? `<small>${esc(note)}</small>` : ''}</span><span class="p${p === ASK ? ' ask' : ''}">${esc(p)}</span>${PLUS}</button>`;
 function bind(box) {
   const sync = () => { const c = cart.get(); $$('.row', box).forEach(b => b.setAttribute('aria-pressed', c.includes(b.dataset.id))); };
   box.addEventListener('click', e => { const b = e.target.closest('.row'); if (b) { cart.toggle(b.dataset.id); sync(); } });
   sync();
 }
 function home() {
-  const box = $('.rows');
-  box.innerHTML = box.dataset.ids.split(',').map(id => row(ALL[id])).join('');
-  bind(box);
   $('.live').textContent = openText();
+  const hero = $('.hero');
+  document.body.classList.add('cover-on');
+  new IntersectionObserver(es => document.body.classList.toggle('past', !es[0].isIntersecting), { rootMargin: '-55% 0px 0px 0px' }).observe(hero);
 }
 function prices() {
   $('.jump').innerHTML = GROUPS.map(x => `<a href="#${x[0]}">${x[1]}</a>`).join('');
