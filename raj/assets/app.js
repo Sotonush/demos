@@ -1,4 +1,4 @@
-const { wa: WA, base: BASE, items: ITEMS, hero: HERO } = window.RAJ;
+const { wa: WA, base: BASE, items: ITEMS } = window.RAJ;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const byId = id => ITEMS.find(i => i.id === id);
@@ -11,34 +11,18 @@ function shell() {
   const page = document.body.dataset.page;
   const nav = [['index', 'Витрина'], ['catalog', 'Каталог'], ['order', 'Заказ'], ['contacts', 'Контакты']];
   const links = nav.map(([k, t]) => `<a href="${k}.html"${k === page ? ' aria-current="page"' : ''}>${t}</a>`).join('');
-  const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.9L2.3 21.8l4.8-1.3A9.8 9.8 0 1 0 12 2.2Zm5.7 13.9c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.8-.7-3.1-1.3-5.1-4.5-5.3-4.7-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1.1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.2.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.3.1.2.1.8-.1 1.3Z"/></svg>';
   document.body.insertAdjacentHTML('afterbegin', `<div class="demo">Демо-версия<a href="owner.html">Как это работает</a></div>
-  <header class="top"><div class="wrap"><a class="logo" href="index.html">Цветочный рай</a><nav class="links" aria-label="Разделы">${links}</nav><a class="wa-round" href="https://wa.me/${WA}" aria-label="Написать в WhatsApp">${icon}</a></div></header>`);
+  <header class="top"><div class="wrap"><a class="logo" href="index.html">Цветочный рай</a><nav class="links" aria-label="Разделы">${links}</nav><a class="wa-link" href="https://wa.me/${WA}">WhatsApp</a></div></header>`);
   document.body.insertAdjacentHTML('beforeend', `<nav class="tabs" aria-label="Разделы">${links}</nav>`);
-}
-
-function home() {
-  const shots = $$('.shot');
-  const dots = $$('.dots i');
-  let i = 0;
-  const show = n => {
-    i = n % shots.length;
-    shots.forEach((s, k) => s.classList.toggle('on', k === i));
-    dots.forEach((d, k) => d.classList.toggle('on', k === i));
-    const it = byId(HERO[i]);
-    $('#now-t').textContent = it.t;
-    $('#now-a').href = `order.html?item=${it.id}`;
-  };
-  show(0);
-  if (motion) setInterval(() => { if (!document.hidden) show(i + 1); }, 4500);
 }
 
 function catalog() {
   const set = f => {
     $$('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.f === f));
-    $$('.cat section').forEach(s => { s.hidden = f !== 'all' && s.dataset.s !== f; });
+    $$('#grid .card').forEach(c => { c.hidden = f !== 'all' && c.dataset.k !== f; });
   };
   $('.seg').onclick = e => { const b = e.target.closest('button'); if (b) set(b.dataset.f); };
+  if (location.hash === '#gifts') set('g');
 }
 
 function order() {
@@ -89,7 +73,7 @@ function order() {
   }
   function render() {
     const it = st.item;
-    $('#picked').innerHTML = it ? `<figure><img src="img/${it.id}.webp" alt=""></figure><div><b>${esc(it.t)}</b>${it.p ? `<span class="tag">${esc(it.p)}</span>` : ''}</div>` : '';
+    $('#picked').innerHTML = it ? `<figure><img src="img/${it.id}.webp" alt=""></figure><div><b>${esc(it.t)}</b>${it.p ? `<span>${esc(it.p)}</span>` : ''}</div>` : '';
     $$('#thumbs button').forEach(b => b.setAttribute('aria-pressed', !!it && b.dataset.id === it.id));
     $('#msg').textContent = text();
   }
@@ -123,4 +107,4 @@ function order() {
 }
 
 shell();
-({ index: home, catalog, order }[document.body.dataset.page] || (() => {}))();
+({ catalog, order }[document.body.dataset.page] || (() => {}))();
