@@ -106,18 +106,18 @@ function parallax() {
   run();
 }
 function fix() {
-  const svg = $('.bike');
+  const pic = $('.pic');
   const steps = $$('.step');
   const set = k => {
-    $$('.part,.mk', svg).forEach(p => p.classList.toggle('on', p.dataset.k === k));
+    $$('.mk', pic).forEach(p => p.classList.toggle('on', p.dataset.k === k));
     steps.forEach(s => s.classList.toggle('on', s.dataset.k === k));
   };
   set(steps[0].dataset.k);
   if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) set(e.target.dataset.k); }), { rootMargin: '-45% 0px -45% 0px' });
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) set(e.target.dataset.k); }), { rootMargin: matchMedia('(max-width:1000px)').matches ? '-76% 0px -23% 0px' : '-45% 0px -45% 0px' });
     steps.forEach(s => io.observe(s));
   }
-  $$('.mk', svg).forEach(m => {
+  $$('.mk', pic).forEach(m => {
     m.addEventListener('mouseenter', () => set(m.dataset.k));
     m.addEventListener('focus', () => set(m.dataset.k));
   });
