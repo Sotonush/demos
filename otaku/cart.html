@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#f3f2f6">
+<title>Корзина, Отаку</title>
+<meta name="description" content="Аниме, K-POP и гик-мерч в трёх магазинах Отаку в Бишкеке. Соберите корзину, и заказ уйдёт в WhatsApp одним сообщением.">
+<meta property="og:title" content="Отаку, аниме и гик-магазин в Бишкеке">
+<meta property="og:description" content="Аниме, K-POP и гик-мерч в трёх магазинах Отаку в Бишкеке. Соберите корзину, и заказ уйдёт в WhatsApp одним сообщением.">
+<meta property="og:image" content="https://sotonush.github.io/demos/otaku/img/og.jpg">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='2' width='20' height='28' rx='10' fill='%23ffffff' stroke='%2315141b' stroke-width='2'/%3E%3Cpath d='M7 16h18v4a9 9 0 0 1-18 0z' fill='%235531e0'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=7">
+</head>
+<body data-page="cart">
+<a class="skip" href="#main">К содержимому</a>
+<div class="demo"><div class="wrap demo-in"><span>Демо-версия сайта</span><a href="owner.html">Как это работает<svg viewBox="0 0 24 24" aria-hidden="true" class="arr"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div><header class="top"><div class="wrap top-in"><a class="logo" href="index.html" aria-label="Отаку, на главную" translate="no">OTAKU</a><nav class="links" aria-label="Разделы"><a href="index.html">Витрина</a><a href="catalog.html">Каталог</a><a href="branches.html">Филиалы</a></nav><a class="cartpill" href="cart.html" aria-current="page" data-cart-target><span class="cp-t"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>Корзина</span><span class="cp-n" data-count>0</span></a></div></header><nav class="tabs" aria-label="Разделы"><a href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="5"/><path d="M7 12h10"/></svg><span>Витрина</span></a><a href="catalog.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Каталог</span></a><a href="branches.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg><span>Филиалы</span></a><a href="cart.html" aria-current="page" data-cart-target-m><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span>Корзина</span><b class="tab-n" data-count>0</b></a></nav><main id="main">
+<div class="wrap page-head"><h1>Корзина</h1><p id="cart-sub">Проверьте список, выберите, как забрать, и отправьте заказ в WhatsApp.</p></div>
+<div class="wrap" id="cart-empty" hidden><div class="empty-box"><h2>Корзина пустая</h2><p>Добавьте товары кнопкой «+» на карточке, и они появятся здесь.</p><a class="btn" href="catalog.html">Открыть каталог<svg viewBox="0 0 24 24" aria-hidden="true" class="arr"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div>
+<form class="wrap checkout" id="checkout" novalidate hidden>
+<div class="co-main">
+<ul class="lines" id="lines"></ul>
+<div class="sum" id="sum"></div>
+<fieldset><legend>Как получить</legend>
+<div class="seg two" role="radiogroup" aria-label="Способ получения"><label class="segbtn"><input type="radio" name="how" value="pickup" checked><span>Самовывоз</span></label><label class="segbtn"><input type="radio" name="how" value="delivery"><span>Доставка</span></label></div>
+<div id="pickup-box" class="opts"><label class="opt"><input type="radio" name="branch" value="tsum" checked><span class="opt-b"><b>ЦУМ</b>улица Шопокова, 91, −1 этаж, бутик L‑40</span></label><label class="opt"><input type="radio" name="branch" value="tommi"><span class="opt-b"><b>Tommi mall</b>проспект Аалы Токомбаева, 21/1Б, 2 этаж, бутик 228</span></label><label class="opt"><input type="radio" name="branch" value="djal"><span class="opt-b"><b>ТРК DJAl</b>микрорайон Джал-23, 1/4, 1 этаж, бутик А23</span></label></div>
+<div id="delivery-box" hidden><label class="fld">Адрес в Бишкеке<input id="addr" name="address" autocomplete="street-address" placeholder="Например, Киевская, 100, кв. 5…"></label><p class="hint">Стоимость и время доставки менеджер подтвердит в WhatsApp.</p><p class="err" data-e="addr" role="alert"></p></div>
+</fieldset>
+<fieldset><legend>Контакты</legend>
+<label class="fld">Ваше имя<input id="name" name="name" autocomplete="given-name" placeholder="Например, Айдана…"></label><p class="err" data-e="name" role="alert"></p>
+<label class="fld">Комментарий<textarea id="note" name="comment" rows="3" maxlength="300" placeholder="Например, нужен подарочный пакет…"></textarea></label>
+</fieldset>
+</div>
+<aside class="co-side"><div class="preview"><h2>Сообщение в WhatsApp</h2><pre id="msg"></pre></div>
+<button class="btn wa" id="send" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true" class="wa-i"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.9L2.3 21.8l4.8-1.3A9.8 9.8 0 1 0 12 2.2Zm5.7 13.9c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.8-.7-3.1-1.3-5.1-4.5-5.3-4.7-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1.1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.2.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.3.1.2.1.8-.1 1.3Z"/></svg>Отправить заказ</button>
+<p class="hint">Откроется WhatsApp с готовым текстом на номер +996 999 15 04 03.</p></aside>
+</form>
+</main>
+<footer class="foot"><div class="wrap foot-in">
+<div class="foot-brand"><a class="logo" href="index.html" translate="no">OTAKU</a><p>Аниме, K-POP и гик-мерч. Три магазина в Бишкеке, ежедневно с 10:00 до 22:00.</p></div>
+<nav class="foot-nav" aria-label="Связь"><a href="https://wa.me/996999150403">WhatsApp</a><a href="https://instagram.com/otaku.kg_">Instagram</a><a href="https://t.me/otakushopkg">Telegram</a><a href="branches.html">Филиалы</a><a href="owner.html">Как это работает</a></nav>
+</div></footer>
+<script src="assets/data.js?v=7"></script>
+<script src="assets/lenis.min.js"></script>
+<script src="assets/app.js?v=7"></script>
+</body>
+</html>
