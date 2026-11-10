@@ -194,7 +194,8 @@ main{display:block;outline:none}
 .empty{padding:28px;border:1px dashed var(--line2);border-radius:var(--r);display:flex;flex-direction:column;gap:18px}
 .empty p{color:var(--mut);max-width:60ch}
 .empty b{color:var(--tx);font-weight:600}
-.more{margin-top:32px}
+.chip.more{margin-top:0}
+.more:not(.chip){margin-top:32px}
 
 .why{background:var(--bg2);border-block:1px solid var(--line)}
 .why-in{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,6vw,96px);align-items:start}
@@ -224,7 +225,7 @@ main{display:block;outline:none}
 .rv.big{padding-bottom:clamp(36px,5vw,56px);margin-bottom:clamp(36px,5vw,56px);border-bottom:1px solid var(--line)}
 .rv.big p{font-size:clamp(1.6rem,1.05rem + 2.2vw,2.9rem);line-height:1.18;font-weight:560;letter-spacing:-.03em;color:var(--tx);max-width:28ch;text-wrap:balance}
 .rv-cols{columns:3 300px;column-gap:clamp(24px,4vw,56px)}
-.rv-cols .rv{break-inside:avoid;padding:0 0 36px}
+.rv-cols .rv{break-inside:avoid;padding:24px 0 36px;border-top:1px solid var(--line)}
 
 
 .faq{border-top:1px solid var(--line)}
@@ -767,3 +768,5 @@ html:has(.lb[open]){overflow:hidden}
   .tabs [role=tab]{flex:1;justify-content:center;padding:0 8px;font-size:.9rem}
   .adm{padding-top:88px}
 }
+
+.alt a[href^="tel"]{white-space:nowrap}
