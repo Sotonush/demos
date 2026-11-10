@@ -266,9 +266,77 @@ function normVideo(v) {
   };
 }
 
-async function videos(lb) {
-  const sec = $('#video');
-  if (!sec || !API || !lb) return;
+function reel() {
+  if (typeof HTMLDialogElement !== 'function') return null;
+  const dlg = el('dialog', { class: 'rl', 'aria-label': 'Видео работ' });
+  const panel = el('div', { class: 'rl-p' });
+  const bg = el('img', { class: 'rl-bg', alt: '', 'aria-hidden': 'true' });
+  const media = el('div', { class: 'rl-m' });
+  const card = el('a', { class: 'rl-c', href: '#', target: '_blank', rel: 'noopener', 'data-goal': 'video_external' });
+  const close = el('button', { type: 'button', class: 'rl-b rl-x', 'aria-label': 'Закрыть' }, [iconSvg('x')]);
+  const up = el('button', { type: 'button', class: 'rl-b rl-up', 'aria-label': 'Предыдущее видео' }, [iconSvg('up')]);
+  const down = el('button', { type: 'button', class: 'rl-b rl-dn', 'aria-label': 'Следующее видео' }, [iconSvg('down')]);
+  panel.append(bg, media, card);
+  dlg.append(panel, close, up, down);
+  document.body.append(dlg);
+  let items = [];
+  let i = 0;
+  let opener = null;
+  const render = () => {
+    const it = items[i];
+    media.replaceChildren();
+    media.className = `rl-m${it.vertical ? ' vert' : ''}`;
+    if (it.poster) { bg.src = it.poster; bg.hidden = false; } else bg.hidden = true;
+    if (it.platform === 'youtube' && it.embed) {
+      media.append(el('iframe', { src: it.embed, title: it.title || 'Видео YouTube', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin' }));
+    } else if (it.platform === 'file') {
+      media.append(el('video', { src: it.url, controls: true, autoplay: true, loop: true, playsinline: true, poster: it.poster || null }));
+    } else {
+      media.append(it.poster ? el('img', { class: 'rl-poster', src: it.poster, alt: '' }) : placeholder(it.platform));
+    }
+    const name = PLATFORM[it.platform] || 'Источник';
+    card.href = it.url;
+    card.dataset.label = it.title || it.url;
+    card.replaceChildren(
+      el('span', { class: 'rl-t' }, [el('small', { text: name }), el('b', { text: it.title || 'Видео работ' })]),
+      el('span', { class: 'rl-o' }, [el('span', { text: it.platform === 'file' ? 'Открыть' : `Смотреть в ${name}` }), iconSvg('out')]),
+    );
+    up.hidden = down.hidden = items.length < 2;
+  };
+  const go = d => { if (items.length > 1) { i = (i + d + items.length) % items.length; render(); } };
+  const open = (list, k, from) => {
+    items = list; i = k; opener = from;
+    render();
+    dlg.showModal();
+    close.focus();
+  };
+  up.addEventListener('click', () => go(-1));
+  down.addEventListener('click', () => go(1));
+  close.addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('close', () => { media.replaceChildren(); if (opener) opener.focus(); });
+  dlg.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); go(-1); }
+  });
+  let y0 = null;
+  let x0 = null;
+  panel.addEventListener('pointerdown', e => { y0 = e.clientY; x0 = e.clientX; });
+  panel.addEventListener('pointerup', e => {
+    if (y0 === null) return;
+    const dy = e.clientY - y0;
+    const dx = e.clientX - x0;
+    y0 = null;
+    if (Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx)) go(dy < 0 ? 1 : -1);
+  });
+  return { open };
+}
+
+async function videos() {
+  if (!API || !$('#ico-play')) return;
+  let off = false;
+  try { off = sessionStorage.getItem('vw-off') === '1'; } catch (e) { off = false; }
+  if (off) return;
   let data;
   try {
     const ctl = typeof AbortController === 'function' ? new AbortController() : null;
@@ -282,23 +350,24 @@ async function videos(lb) {
   }
   const raw = (data && data.items || []).filter(v => v && v.url).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   if (!raw.length) return;
+  const rl = reel();
+  if (!rl) return;
   const list = raw.map(normVideo);
-  const row = $('#vrow', sec);
-  list.forEach((v, k) => {
-    let media;
-    if (v.poster) media = el('img', { src: v.poster, alt: '', loading: 'lazy', decoding: 'async' });
-    else if (v.platform === 'file') media = el('video', { src: `${v.url}#t=0.1`, muted: true, playsinline: true, preload: 'metadata', 'aria-hidden': 'true', tabindex: '-1' });
-    else media = placeholder(v.platform);
-    const name = PLATFORM[v.platform] || 'Видео';
-    const a = el('a', { href: v.url, target: '_blank', rel: 'noopener', 'aria-label': `${v.title || name}, смотреть видео` }, [
-      el('span', { class: 'vm' }, [media]),
-      el('span', { class: 'vplay', 'aria-hidden': 'true' }, [iconSvg('play')]),
-      el('span', { class: 'vt' }, [v.title ? el('b', { text: v.title }) : null, el('small', { text: name })]),
-    ]);
-    a.addEventListener('click', e => { e.preventDefault(); goal('video_open', v.title || v.url); lb.open(list, k, a); });
-    row.append(el('li', { class: `vc ${v.vertical ? 'vert' : 'hor'}` }, [a]));
-  });
-  sec.hidden = false;
+  const first = list[0];
+  let thumb;
+  if (first.poster) thumb = el('img', { src: first.poster, alt: '', decoding: 'async' });
+  else if (first.platform === 'file') thumb = el('video', { src: `${first.url}#t=0.1`, muted: true, playsinline: true, preload: 'metadata', 'aria-hidden': 'true', tabindex: '-1' });
+  else thumb = placeholder(first.platform);
+  const open = el('button', { type: 'button', class: 'vw-o', 'aria-label': `Смотреть видео: ${first.title || 'работы мастера'}` }, [
+    el('span', { class: 'vw-m' }, [thumb]),
+    el('span', { class: 'vw-pl', 'aria-hidden': 'true' }, [iconSvg('play')]),
+    list.length > 1 ? el('span', { class: 'vw-n', text: `1/${list.length}` }) : null,
+  ]);
+  const x = el('button', { type: 'button', class: 'vw-x', 'aria-label': 'Скрыть видео' }, [iconSvg('x')]);
+  const w = el('div', { class: 'vw', role: 'complementary', 'aria-label': 'Видео работ' }, [open, x]);
+  open.addEventListener('click', () => { goal('video_open', first.title || first.url); rl.open(list, 0, open); });
+  x.addEventListener('click', () => { w.remove(); try { sessionStorage.setItem('vw-off', '1'); } catch (e) { return; } });
+  document.body.append(w);
 }
 
 function openWa(text) {
@@ -532,5 +601,5 @@ fitChips();
 finder();
 const LB = lightbox();
 gallery(LB);
-videos(LB);
+videos();
 book();
