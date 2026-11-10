@@ -291,12 +291,11 @@ async function videos(lb) {
     else media = placeholder(v.platform);
     const name = PLATFORM[v.platform] || 'Видео';
     const a = el('a', { href: v.url, target: '_blank', rel: 'noopener', 'aria-label': `${v.title || name}, смотреть видео` }, [
-      el('span', { class: 'vm' }, [media]),
-      el('span', { class: 'vplay', 'aria-hidden': 'true' }, [iconSvg('play')]),
+      el('span', { class: 'vm' }, [media, el('span', { class: 'vplay', 'aria-hidden': 'true' }, [iconSvg('play')])]),
       el('span', { class: 'vt' }, [v.title ? el('b', { text: v.title }) : null, el('small', { text: name })]),
     ]);
-    a.addEventListener('click', e => { e.preventDefault(); goal('video_open', v.title || v.url); lb.open(list, k, a); });
-    row.append(el('li', { class: `vc ${v.vertical ? 'vert' : 'hor'}` }, [a]));
+    a.addEventListener('click', () => goal('video_open', v.title || v.url));
+    row.append(el('li', { class: 'vc' }, [a]));
   });
   sec.hidden = false;
 }
