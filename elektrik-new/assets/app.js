@@ -268,7 +268,7 @@ function normVideo(v) {
 
 function reel() {
   if (typeof HTMLDialogElement !== 'function') return null;
-  const dlg = el('dialog', { class: 'rl', 'aria-label': 'Видео работ' });
+  const dlg = el('dialog', { class: 'reel', 'aria-label': 'Видео работ' });
   const panel = el('div', { class: 'rl-p' });
   const bg = el('img', { class: 'rl-bg', alt: '', 'aria-hidden': 'true' });
   const media = el('div', { class: 'rl-m' });
