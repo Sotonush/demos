@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Кабинет | Электрик.Kg</title>
+<meta name="description" content="Кабинет владельца.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#3068c7">
+<meta name="color-scheme" content="light">
+<meta name="format-detection" content="telephone=no">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="Электрик.Kg">
+<meta property="og:title" content="Кабинет | Электрик.Kg">
+<meta property="og:description" content="Кабинет владельца.">
+<meta property="og:image" content="img/og.jpg">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preload" href="assets/fonts/science-gothic-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=7">
+</head>
+<body data-page="admin" data-wa="996559955566" data-api="https://elektrik.169-58-93-73.sslip.io">
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false"><clipPath id="tri" clipPathUnits="objectBoundingBox"><path d="M.04 .12C.04 .03 .12 -.01 .2 .04L.94 .42C1.01 .46 1.01 .54 .94 .58L.2 .96C.12 1.01 .04 .97 .04 .88Z"/></clipPath></svg>
+<a class="skip" href="#main">К содержанию</a>
+<header class="top adm-top" id="top"><div class="wrap bar"><a class="logo" href="index.html" aria-label="Электрик.Kg, на главную"><svg class="mk" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><path class="mk-t" d="M18 16 18 104 104 60Z"/><circle class="mk-c" cx="52" cy="60" r="27"/><path class="mk-o" d="M36 44 94 38 80 49 36 50ZM62 44 74 44 46 76 34 76ZM68 70 68 76 10 82 24 70Z"/><path class="mk-z" d="M36 44 94 38 80 49 36 50ZM62 44 74 44 46 76 34 76ZM68 70 68 76 10 82 24 70Z"/></svg><span class="lt" translate="no">Электрик<span>.Kg</span></span></a><span class="adm-t">Кабинет</span>
+<button type="button" class="btn ghost sm" id="logout" hidden>Выйти</button></div></header>
+<main class="wrap adm" id="main" tabindex="-1">
+<section class="adm-login" id="s-login" hidden aria-labelledby="login-h" tabindex="-1">
+<h1 id="login-h">Вход в кабинет</h1>
+<p class="lead" id="login-note">Почта и пароль владельца сайта.</p>
+<form id="login-f" novalidate>
+<label class="sub" for="email">Почта</label>
+<input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" enterkeyhint="next">
+<label class="sub" for="pass">Пароль</label>
+<div class="pw"><input id="pass" name="password" type="password" autocomplete="current-password" enterkeyhint="go"><button type="button" class="pw-t" aria-pressed="false" aria-controls="pass">Показать</button></div>
+<p class="err" id="login-e" role="alert"></p>
+<button class="btn send wide" type="submit">Войти</button></form>
+</section>
+<section class="adm-login" id="s-setup" hidden aria-labelledby="setup-h" tabindex="-1">
+<h1 id="setup-h">Защитите вход</h1>
+<p class="lead">Один раз подключите приложение с кодами. Дальше при входе оно будет давать 6 цифр.</p>
+<ol class="howto">
+<li><b>Установите Google Authenticator</b> на телефон (или любое приложение с кодами).</li>
+<li><b>Нажмите «+» и отсканируйте QR-код</b><span class="qr" id="qr"></span><span class="sub">Не сканируется? Выберите «Ввести ключ» и вставьте:</span><span class="secret"><code id="secret"></code><button type="button" class="btn ghost sm" id="copy-secret">Скопировать</button></span></li>
+<li><b>Введите 6 цифр из приложения</b></li>
+</ol>
+<form class="codef" id="setup-f" novalidate><label class="vh" for="setup-code">Код из приложения</label>
+<input class="otp" id="setup-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="000000">
+<p class="err" id="setup-e" role="alert"></p>
+<button class="btn send wide" type="submit">Подключить</button></form>
+<p class="back"><button type="button" class="linkbtn to-login">Войти под другой почтой</button></p>
+</section>
+<section class="adm-login" id="s-totp" hidden aria-labelledby="totp-h" tabindex="-1">
+<h1 id="totp-h">Код из приложения</h1>
+<p class="lead" id="totp-note">Откройте Google Authenticator и введите 6 цифр для Электрик.Kg.</p>
+<form class="codef" id="totp-f" novalidate><label class="vh" for="code" id="code-l">Код из приложения</label>
+<input class="otp" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="000000" spellcheck="false">
+<p class="err" id="totp-e" role="alert"></p>
+<button class="btn send wide" type="submit">Войти</button></form>
+<p class="back"><button type="button" class="linkbtn" id="use-recovery" aria-pressed="false">Нет телефона? Введите резервный код</button></p>
+<p class="back"><button type="button" class="linkbtn to-login">Назад</button></p>
+</section>
+<section class="adm-login wide" id="s-codes" hidden aria-labelledby="codes-h" tabindex="-1">
+<h1 id="codes-h">Резервные коды</h1>
+<p class="lead">Если телефон потеряется, войти можно будет одним из этих кодов. Каждый срабатывает один раз. Сохраните их сейчас: больше они не покажутся.</p>
+<ul class="rcodes" id="rcodes"></ul>
+<div class="acts"><button type="button" class="btn ghost" id="copy-codes">Скопировать коды</button></div>
+<label class="chk"><input type="checkbox" id="saved"><span>Я сохранил коды</span></label>
+<button type="button" class="btn send wide" id="codes-ok" aria-disabled="true">Продолжить</button>
+</section>
+<section class="adm-app" id="app" hidden>
+<div class="tabs" role="tablist" aria-label="Разделы кабинета">
+<button type="button" role="tab" id="tab-orders" aria-controls="t-orders" aria-selected="true">Заявки<span class="badge" id="newc" hidden></span></button>
+<button type="button" role="tab" id="tab-videos" aria-controls="t-videos" aria-selected="false" tabindex="-1">Видео</button>
+<button type="button" role="tab" id="tab-sec" aria-controls="t-sec" aria-selected="false" tabindex="-1">Безопасность</button>
+</div>
+<div class="tp" id="t-orders" role="tabpanel" aria-labelledby="tab-orders">
+<ul class="olist" id="orders" aria-live="polite"></ul>
+<p class="empty-t" id="orders-empty" hidden>Заявок пока нет. Новые появятся здесь сами.</p>
+</div>
+<div class="tp" id="t-videos" role="tabpanel" aria-labelledby="tab-videos" hidden>
+<form class="add" id="add-f" novalidate><label class="vh" for="vurl">Ссылка на видео</label>
+<input id="vurl" name="url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Ссылка на пост в Instagram, YouTube или TikTok…" aria-describedby="vurl-h">
+<button class="btn send" type="submit">Добавить</button></form>
+<p class="hint" id="vurl-h">Вставьте ссылку на пост. Ролик скачается сам и будет играть на сайте сразу. Не скачался? Прикрепите файл mp4 до 100 МБ.</p>
+<p class="err" id="add-e" role="alert"></p>
+<ul class="vlist" id="vlist"></ul>
+<p class="empty-t" id="v-empty" hidden>Видео пока нет. Вставьте ссылку выше, и ролик появится на главной.</p>
+</div>
+<div class="tp" id="t-sec" role="tabpanel" aria-labelledby="tab-sec" hidden>
+<p class="who" id="who"></p>
+<div class="secb">
+<form class="card-f" id="pw-f" novalidate><h2>Сменить пароль</h2>
+<label class="sub" for="pw-cur">Текущий пароль</label><input id="pw-cur" type="password" autocomplete="current-password">
+<label class="sub" for="pw-new">Новый пароль</label><input id="pw-new" type="password" autocomplete="new-password" minlength="10" aria-describedby="pw-h"><p class="hint" id="pw-h">Не короче 10 символов.</p>
+<p class="err" id="pw-e" role="alert"></p><button class="btn send" type="submit">Сменить пароль</button></form>
+<form class="card-f" id="rc-f" novalidate><h2>Новые резервные коды</h2><p class="hint">Старые коды перестанут работать.</p>
+<label class="sub" for="rc-pass">Пароль</label><input id="rc-pass" type="password" autocomplete="current-password">
+<label class="sub" for="rc-code">Код из приложения</label><input class="otp sm" id="rc-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+<p class="err" id="rc-e" role="alert"></p><button class="btn ghost" type="submit">Получить новые коды</button>
+<div id="rc-out" hidden><ul class="rcodes" id="rc-list"></ul><button type="button" class="btn ghost sm" id="rc-copy">Скопировать коды</button></div></form>
+<div class="card-f"><h2>Выход</h2><p class="hint">Закроет кабинет на этом устройстве.</p><button type="button" class="btn ghost" id="logout2">Выйти</button>
+<p class="hint">Вошли на чужом устройстве или потеряли телефон? Закройте кабинет везде, где он открыт.</p><button type="button" class="btn ghost" id="logout-all">Выйти на всех устройствах</button></div>
+</div>
+</div>
+<p class="astatus" id="astatus" role="status" aria-live="polite"></p>
+</section>
+</main>
+<template id="ico-sound"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M160,32.25V223.69a8.29,8.29,0,0,1-3.91,7.18,8,8,0,0,1-9-.56l-65.57-51A4,4,0,0,1,80,176.16V79.84a4,4,0,0,1,1.55-3.15l65.57-51a8,8,0,0,1,10,.16A8.27,8.27,0,0,1,160,32.25ZM60,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H60a4,4,0,0,0,4-4V84A4,4,0,0,0,60,80Zm126.77,20.84a8,8,0,0,0-.72,11.3,24,24,0,0,1,0,31.72,8,8,0,1,0,12,10.58,40,40,0,0,0,0-52.88A8,8,0,0,0,186.74,100.84Zm40.89-26.17a8,8,0,1,0-11.92,10.66,64,64,0,0,1,0,85.34,8,8,0,1,0,11.92,10.66,80,80,0,0,0,0-106.66Z"/></svg></template><template id="ico-mute"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M213.92,210.62a8,8,0,1,1-11.84,10.76L160,175.09v48.6a8.29,8.29,0,0,1-3.91,7.18,8,8,0,0,1-9-.56l-65.55-51A4,4,0,0,1,80,176.18V87.09L42.08,45.38A8,8,0,1,1,53.92,34.62Zm-27.21-55.46a8,8,0,0,0,11.29-.7,40,40,0,0,0,0-52.88,8,8,0,1,0-12,10.57,24,24,0,0,1,0,31.72A8,8,0,0,0,186.71,155.16Zm40.92-80.49a8,8,0,1,0-11.92,10.66,64,64,0,0,1,0,85.34,8,8,0,1,0,11.92,10.66,80,80,0,0,0,0-106.66ZM153,119.87a4,4,0,0,0,7-2.7V32.25a8.27,8.27,0,0,0-2.88-6.4,8,8,0,0,0-10-.16L103.83,59.33a4,4,0,0,0-.5,5.85ZM60,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H60a4,4,0,0,0,4-4V84A4,4,0,0,0,60,80Z"/></svg></template><template id="ico-instagram"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160ZM176,24H80A56.06,56.06,0,0,0,24,80v96a56.06,56.06,0,0,0,56,56h96a56.06,56.06,0,0,0,56-56V80A56.06,56.06,0,0,0,176,24Zm40,152a40,40,0,0,1-40,40H80a40,40,0,0,1-40-40V80A40,40,0,0,1,80,40h96a40,40,0,0,1,40,40ZM192,76a12,12,0,1,1-12-12A12,12,0,0,1,192,76Z"/></svg></template><template id="ico-tiktok"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M224,72a48.05,48.05,0,0,1-48-48,8,8,0,0,0-8-8H128a8,8,0,0,0-8,8V156a20,20,0,1,1-28.57-18.08A8,8,0,0,0,96,130.69V88a8,8,0,0,0-9.4-7.88C50.91,86.48,24,119.1,24,156a76,76,0,0,0,152,0V116.29A103.25,103.25,0,0,0,224,128a8,8,0,0,0,8-8V80A8,8,0,0,0,224,72Zm-8,39.64a87.19,87.19,0,0,1-43.33-16.15A8,8,0,0,0,160,102v54a60,60,0,0,1-120,0c0-25.9,16.64-49.13,40-57.6v27.67A36,36,0,1,0,136,156V32h24.5A64.14,64.14,0,0,0,216,87.5Z"/></svg></template><template id="ico-film"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,88h80v80H40Zm96-16V56h32V72Zm-16,0H88V56h32Zm0,112v16H88V184Zm16,0h32v16H136Zm0-16V88h80v80Zm80-96H184V56h32ZM72,56V72H40V56ZM40,184H72v16H40Zm176,16H184V184h32v16Z"/></svg></template><template id="ico-play"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></svg></template><template id="ico-checks"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M149.61,85.71l-89.6,88a8,8,0,0,1-11.22,0L10.39,136a8,8,0,1,1,11.22-11.41L54.4,156.79l84-82.5a8,8,0,1,1,11.22,11.42Zm96.1-11.32a8,8,0,0,0-11.32-.1l-84,82.5-18.83-18.5a8,8,0,0,0-11.21,11.42l24.43,24a8,8,0,0,0,11.22,0l89.6-88A8,8,0,0,0,245.71,74.39Z"/></svg></template><template id="ico-up"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/></svg></template><template id="ico-down"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></svg></template><template id="ico-x"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></template><template id="ico-out"><svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/></svg></template>
+<script src="assets/leads-client.js?v=7" defer></script>
+<script src="assets/admin.js?v=7" defer></script>
+</body>
+</html>
