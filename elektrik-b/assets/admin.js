@@ -94,6 +94,7 @@ async function auth(method, path, body) {
 function show(id) {
   SCREENS.forEach(s => { $(`#${s}`).hidden = s !== id; });
   $('#logout').hidden = id !== 'app';
+  document.body.classList.toggle('in-app', id === 'app');
   const sec = $(`#${id}`);
   const f = $('input:not([type=checkbox]):not([hidden])', sec);
   if (id !== 'app') (f && !f.value ? f : sec).focus();
@@ -174,7 +175,7 @@ async function enterPanel() {
   if (!window.LeadsClient || !API) { showLogin('Сервис заявок недоступен.'); return; }
   try {
     const me = await auth('GET', '/api/owner/auth/me');
-    $('#who').textContent = me.email ? `Вы вошли как ${me.email}` : '';
+    $('#who').textContent = me.email || '';
   } catch (err) {
     if (err.status === 401) { showLogin(''); return; }
   }
@@ -182,9 +183,11 @@ async function enterPanel() {
   show('app');
   const draft = takeDraft();
   if (draft && draft.vurl) $('#vurl').value = draft.vurl;
+  drawFilters();
+  loadSummary();
   loadOrders();
   loadVideos(draft && draft.titles);
-  stopWatch = owner.watch(() => loadOrders(true), err => { if (err.status === 401) expired(); });
+  stopWatch = owner.watch(() => { loadOrders(true); loadSummary(); if (selected && $('#od').classList.contains('open')) openOrder(selected, false); }, err => { if (err.status === 401) expired(); });
 }
 
 function expired() {
@@ -371,66 +374,199 @@ function tabs() {
   });
 }
 
+const FILTERS = [['', 'Все'], ['new', 'Новые'], ['accepted', 'Приняты'], ['ready', 'Готовы'], ['done', 'Выполнены'], ['cancelled', 'Отменены']];
 let knownOrders = new Set();
+let orders = [];
+let ofilter = '';
+let selected = null;
+let firstLoad = true;
+const narrow = matchMedia('(max-width: 900px)');
+
+function ago(iso) {
+  const d = new Date(iso);
+  const s = (Date.now() - d.getTime()) / 1000;
+  if (Number.isNaN(s)) return '';
+  if (s < 60) return 'только что';
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} мин назад`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} ч назад`;
+  return when(iso);
+}
+
+function waLink(o) {
+  return `https://wa.me/${String(o.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Здравствуйте! Это Электрик.Kg, по вашей заявке №${o.number}.`)}`;
+}
+
+function drawFilters(counts = {}) {
+  const box = $('#ofilter');
+  box.replaceChildren(...FILTERS.map(([k, t]) => {
+    const n = k ? counts[k] || 0 : null;
+    const b = el('button', { type: 'button', class: 'chip', 'aria-pressed': String(k === ofilter) }, [el('span', { text: t }), n ? el('span', { class: 'chip-n', text: n }) : null]);
+    b.addEventListener('click', () => { ofilter = k; drawFilters(counts); loadOrders(); });
+    return b;
+  }));
+}
+
+async function loadSummary() {
+  if (!owner) return;
+  try {
+    const s = await owner.summary();
+    const by = s.by_status || {};
+    const cell = (k, t) => el('li', { class: `sum-${k}` }, [el('b', { text: by[k] || 0 }), el('span', { text: t })]);
+    $('#sum').replaceChildren(cell('new', 'новых'), cell('accepted', 'в работе'), cell('ready', 'готовы'), cell('done', 'выполнено'));
+    drawFilters(by);
+  } catch (err) {
+    if (err.status === 401) expired();
+  }
+}
+
+function skeleton() {
+  $('#orders').replaceChildren(...[0, 1, 2, 3].map(() => el('li', { class: 'oc sk', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')])));
+}
+
 async function loadOrders(fresh) {
   if (!owner) return;
+  if (firstLoad) skeleton();
   let data;
   try {
-    data = await owner.list({ limit: 100 });
+    data = await owner.list(ofilter ? { limit: 100, status: ofilter } : { limit: 100 });
   } catch (err) {
     if (err.status === 401) { expired(); return; }
     toast(err.message);
     return;
   }
+  orders = data.items || [];
   const ul = $('#orders');
-  const items = data.items || [];
-  ul.replaceChildren(...items.map(o => orderCard(o, fresh && !knownOrders.has(o.number))));
-  knownOrders = new Set(items.map(o => o.number));
-  $('#orders-empty').hidden = items.length > 0;
+  ul.replaceChildren(...orders.map(o => orderCard(o, fresh && !knownOrders.has(o.number))));
+  if (fresh && orders.some(o => !knownOrders.has(o.number))) toast('Новая заявка');
+  orders.forEach(o => knownOrders.add(o.number));
+  $('#orders-empty').hidden = orders.length > 0;
+  $('#orders-empty').textContent = ofilter ? 'Заявок с таким статусом нет.' : 'Заявок пока нет. Новые появятся здесь сами, без обновления страницы.';
   const nc = data.new_count || 0;
   $('#newc').hidden = !nc;
   $('#newc').textContent = nc;
   document.title = `${nc ? `(${nc}) ` : ''}Кабинет | Электрик.Kg`;
+  if (firstLoad && !narrow.matches && orders[0] && !selected) openOrder(orders[0].number, false);
+  else if (selected) markSelected();
+  firstLoad = false;
+}
+
+function markSelected() {
+  $$('#orders .oc').forEach(li => li.classList.toggle('sel', li.dataset.n === String(selected)));
 }
 
 function orderCard(o, appeared) {
   const what = (o.items || []).map(i => i.title).join(', ');
-  const acts = (o.next_statuses || []).map(s => el('button', {
-    type: 'button', class: `btn ${s === 'cancelled' ? 'ghost' : 'blue'}`, text: ACTION[s] || STATUS[s] || s,
-    onclick: async e => {
-      e.currentTarget.disabled = true;
+  const li = el('li', { class: `oc${o.status === 'new' ? ' is-new' : ''}${String(o.number) === String(selected) ? ' sel' : ''}`, 'data-n': o.number });
+  const b = el('button', { type: 'button', class: 'oc-b', 'aria-label': `Заявка №${o.number}, ${o.name || 'клиент'}` }, [
+    el('span', { class: 'oc-h' }, [el('b', { text: o.name || 'Клиент' }), el('time', { datetime: o.created_at, text: ago(o.created_at) })]),
+    el('span', { class: 'oc-w', text: what || o.comment || 'Без описания' }),
+    el('span', { class: 'oc-f' }, [el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }), el('span', { class: 'oc-no', text: `№${o.number}` })]),
+  ]);
+  b.addEventListener('click', () => openOrder(o.number, true));
+  li.append(b);
+  if (appeared) li.classList.add('arrived');
+  return li;
+}
+
+async function openOrder(number, focus) {
+  selected = number;
+  markSelected();
+  const box = $('#od');
+  box.classList.add('open', 'loading');
+  document.body.classList.toggle('od-open', narrow.matches);
+  let o;
+  try {
+    o = await owner.get(number);
+  } catch (err) {
+    box.classList.remove('loading');
+    if (err.status === 401) { expired(); return; }
+    toast(err.message);
+    return;
+  }
+  box.classList.remove('loading');
+  drawDetail(o);
+  if (focus) box.focus({ preventScroll: true });
+}
+
+function closeOrder() {
+  $('#od').classList.remove('open');
+  document.body.classList.remove('od-open');
+  const li = $(`#orders .oc[data-n="${selected}"] .oc-b`);
+  if (narrow.matches) { selected = null; markSelected(); }
+  if (li) li.focus({ preventScroll: true });
+}
+
+function drawDetail(o) {
+  const what = (o.items || []).map(i => i.title).join(', ');
+  const acts = (o.next_statuses || []).map(s => {
+    const b = el('button', { type: 'button', class: `btn ${s === 'cancelled' || s === 'no_show' ? 'ghost' : 'send'}`, text: ACTION[s] || STATUS[s] || s });
+    b.addEventListener('click', async () => {
+      b.disabled = true;
       try {
-        await owner.setStatus(o.number, s);
+        const nv = await owner.setStatus(o.number, s);
         toast(`Заявка №${o.number}: ${(STATUS[s] || s).toLowerCase()}`);
+        drawDetail(Object.assign({}, o, nv, { history: (nv && nv.history) || [...(o.history || []), { status: s, actor: 'owner', at: new Date().toISOString() }] }));
         loadOrders();
+        loadSummary();
       } catch (err) {
         if (err.status === 401) { expired(); return; }
-    toast(err.message);
-        e.currentTarget.disabled = false;
+        toast(err.message);
+        b.disabled = false;
       }
-    },
-  }));
-  const li = el('li', { class: `oc${o.status === 'new' ? ' is-new' : ''}` }, [
-    el('div', { class: 'oc-h' }, [
-      el('b', { text: o.name || 'Клиент' }),
-      el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }),
-      el('span', { class: 'oc-no', text: `№${o.number}` }),
-      el('time', { datetime: o.created_at, text: when(o.created_at) }),
+    });
+    return b;
+  });
+  const hist = o.history && o.history.length ? o.history : [{ status: o.status, actor: 'client', at: o.created_at }];
+  const timeline = el('ol', { class: 'tl-s' }, hist.map((h, k) => el('li', { class: k === hist.length - 1 ? 'now' : null }, [
+    el('b', { text: STATUS[h.status] || h.status }),
+    el('span', { text: `${h.actor === 'owner' ? 'Вы' : 'Клиент'}, ${when(h.at)}` }),
+  ])));
+  const note = el('textarea', { id: 'od-note', rows: '3', maxlength: '500', 'aria-label': 'Заметка', placeholder: 'Заметка для себя: что сделали, что обещали…' });
+  note.value = o.note || '';
+  const saveNote = el('button', { type: 'button', class: 'btn ghost sm', text: 'Сохранить заметку' });
+  saveNote.addEventListener('click', async () => {
+    saveNote.disabled = true;
+    try { await owner.setNote(o.number, note.value.trim()); toast('Заметка сохранена'); } catch (err) { if (err.status === 401) { expired(); return; } toast(err.message); }
+    saveNote.disabled = false;
+  });
+  const back = el('button', { type: 'button', class: 'od-back', 'aria-label': 'К списку заявок' }, [icon('back'), el('span', { text: 'Заявки' })]);
+  back.addEventListener('click', closeOrder);
+  $('#od').replaceChildren(
+    el('div', { class: 'od-top' }, [back, el('span', { class: 'oc-no', text: `№${o.number}` }), el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status })]),
+    el('div', { class: 'od-body' }, [
+      el('h2', { text: o.name || 'Клиент' }),
+      el('p', { class: 'od-when', text: `${ago(o.created_at)}, ${when(o.created_at)}` }),
+      el('a', { class: 'od-tel', href: `tel:${o.phone}`, text: phoneText(o.phone) }),
+      el('div', { class: 'od-call' }, [
+        el('a', { class: 'btn call sm', href: `tel:${o.phone}` }, [icon('phone'), el('span', { text: 'Позвонить' })]),
+        el('a', { class: 'btn wa sm', href: waLink(o), target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
+      ]),
+      el('dl', { class: 'od-dl' }, [
+        what ? el('div', {}, [el('dt', { text: 'Что случилось' }), el('dd', { text: what })]) : null,
+        o.comment ? el('div', {}, [el('dt', { text: 'Подробности' }), el('dd', { class: 'pre', text: o.comment })]) : null,
+        o.address ? el('div', {}, [el('dt', { text: 'Адрес' }), el('dd', { text: o.address })]) : null,
+      ]),
+      el('h3', { text: 'История' }),
+      timeline,
+      el('h3', { text: 'Заметка' }),
+      note,
+      saveNote,
     ]),
-    el('p', { class: 'oc-p' }, [el('a', { href: `tel:${o.phone}`, text: phoneText(o.phone) }), document.createTextNode('  '),
-      el('a', { href: `https://wa.me/${String(o.phone || '').replace(/\D/g, '')}`, target: '_blank', rel: 'noopener', text: 'WhatsApp' })]),
-    what ? el('p', { class: 'oc-c', text: what }) : null,
-    o.comment ? el('p', { class: 'oc-c', text: o.comment }) : null,
-    acts.length ? el('div', { class: 'oc-a' }, acts) : null,
-  ]);
-  if (appeared) li.animate([{ background: 'rgba(26,92,255,.35)' }, { background: 'transparent' }], { duration: 1600 });
-  return li;
+    acts.length ? el('div', { class: 'od-acts' }, acts) : el('div', { class: 'od-acts done-t' }, [el('span', { text: 'Заявка закрыта' })]),
+  );
 }
 
 function thumb(v) {
   const poster = v.poster_url || (v.platform === 'youtube' && v.embed_id ? `https://img.youtube.com/vi/${v.embed_id}/hqdefault.jpg` : '');
   const box = el('span', { class: `vi-ph${v.orientation === 'horizontal' ? ' hor' : ''}` });
-  if (poster) box.append(el('img', { src: poster, alt: '', loading: 'lazy' }));
+  const fallback = () => (v.video_file_url ? el('video', { src: `${v.video_file_url}#t=0.1`, muted: true, playsinline: true, preload: 'metadata' }) : el('span', { class: 'vph' }, [icon(v.platform === 'instagram' ? 'instagram' : v.platform === 'tiktok' ? 'tiktok' : 'film'), el('span', { text: PLATFORM[v.platform] || 'Видео' })]));
+  if (poster) {
+    const img = el('img', { src: poster, alt: '', loading: 'lazy' });
+    img.addEventListener('error', () => img.replaceWith(fallback()), { once: true });
+    box.append(img);
+  }
   else if (v.video_file_url) box.append(el('video', { src: `${v.video_file_url}#t=0.1`, muted: true, playsinline: true, preload: 'metadata' }));
   else box.append(el('span', { class: 'vph' }, [icon(v.platform === 'instagram' ? 'instagram' : v.platform === 'tiktok' ? 'tiktok' : 'film'), el('span', { text: PLATFORM[v.platform] || 'Видео' })]));
   return box;
