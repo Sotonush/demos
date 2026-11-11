@@ -368,6 +368,9 @@ async function videos() {
   open.addEventListener('click', () => { goal('video_open', first.title || first.url); rl.open(list, 0, open); });
   x.addEventListener('click', () => { w.remove(); try { sessionStorage.setItem('vw-off', '1'); } catch (e) { return; } });
   document.body.append(w);
+  const upd = () => w.classList.toggle('on', window.scrollY > window.innerHeight * 0.7);
+  window.addEventListener('scroll', upd, { passive: true });
+  upd();
 }
 
 function openWa(text) {
