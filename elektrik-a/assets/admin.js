@@ -95,6 +95,8 @@ async function auth(method, path, body) {
 
 function show(id) {
   SCREENS.forEach(s => { $(`#${s}`).hidden = s !== id; });
+  $('#auth').hidden = id === 'app';
+  document.body.classList.toggle('in-app', id === 'app');
   $('#logout').hidden = id !== 'app';
   const sec = $(`#${id}`);
   const f = $('input:not([type=checkbox]):not([hidden])', sec);
@@ -177,6 +179,7 @@ async function enterPanel() {
   try {
     const me = await auth('GET', '/api/owner/auth/me');
     $('#who').textContent = me.email ? `Вы вошли как ${me.email}` : '';
+    $('#who-side').textContent = me.email || '';
   } catch (err) {
     if (err.status === 401) { showLogin(''); return; }
   }
@@ -374,60 +377,294 @@ function tabs() {
 }
 
 let knownOrders = new Set();
+let orders = [];
+let filter = 'all';
+let picked = '';
+let lastNew = -1;
+let soundOn = store('elektrik-owner-sound') === '1';
+let loadedOnce = false;
+const FILTERS = [
+  ['all', 'Все', () => true],
+  ['new', 'Новые', o => o.status === 'new'],
+  ['work', 'В работе', o => ['accepted', 'ready', 'confirmed'].includes(o.status)],
+  ['done', 'Выполнены', o => o.status === 'done'],
+  ['off', 'Отменены', o => ['cancelled', 'no_show'].includes(o.status)],
+];
+const ORDER_T = { new: 'Новый', accepted: 'Принят', ready: 'Готов', done: 'Выполнен', cancelled: 'Отменён' };
+const NEXT_HINT = { accepted: 'Мастер взял заявку', ready: 'Машина готова', done: 'Работа закрыта', cancelled: 'Заявка снята', confirmed: 'Запись подтверждена', no_show: 'Клиент не приехал' };
+const narrow = matchMedia('(max-width: 900px)');
+
+function ago(iso) {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'только что';
+  const plural = (n, a, b, c) => (n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? b : c);
+  if (s < 3600) { const m = Math.floor(s / 60); return `${m} ${plural(m, 'минуту', 'минуты', 'минут')} назад`; }
+  if (s < 86400) { const h = Math.floor(s / 3600); return `${h} ${plural(h, 'час', 'часа', 'часов')} назад`; }
+  return when(iso);
+}
+
+function parseComment(text) {
+  const rows = [];
+  const rest = [];
+  String(text || '').split('\n').forEach(line => {
+    const m = /^([^:]{2,30}):\s*(.+)$/.exec(line.trim());
+    if (m) rows.push([m[1], m[2]]); else if (line.trim()) rest.push(line.trim());
+  });
+  return { rows, rest: rest.join('\n') };
+}
+
+function initials(name) {
+  const w = String(name || 'К').trim().split(/\s+/).filter(Boolean);
+  return ((w[0] || 'К')[0] + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase();
+}
+
+function waLink(phone, o) {
+  const d = String(phone || '').replace(/\D/g, '');
+  const text = `Здравствуйте${o && o.name && o.name !== 'Клиент' ? `, ${o.name}` : ''}! Это Электрик.Kg по вашей заявке №${o ? o.number : ''}.`;
+  return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
+}
+
+function beep() {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1320].forEach((f, k) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = f;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + k * 0.16);
+      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + k * 0.16 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + k * 0.16 + 0.22);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + k * 0.16);
+      o.stop(ctx.currentTime + k * 0.16 + 0.25);
+    });
+  } catch (e) { return; }
+}
+
+function soundUi() {
+  const b = $('#snd');
+  const draw = () => { b.setAttribute('aria-pressed', String(soundOn)); b.title = soundOn ? 'Звук новых заявок включён' : 'Звук новых заявок выключен'; };
+  b.addEventListener('click', () => { soundOn = !soundOn; store('elektrik-owner-sound', soundOn ? '1' : ''); draw(); if (soundOn) beep(); });
+  draw();
+}
+
+async function loadSummary() {
+  if (!owner) return;
+  let s;
+  try { s = await owner.summary(); } catch (err) { if (err.status === 401) expired(); return; }
+  const b = s.by_status || {};
+  const tiles = [
+    ['new', 'Новые', b.new || 0],
+    ['work', 'В работе', (b.accepted || 0) + (b.ready || 0) + (b.confirmed || 0)],
+    ['done', 'Выполнены', b.done || 0],
+    ['off', 'Отменены', (b.cancelled || 0) + (b.no_show || 0)],
+  ];
+  $('#sum').replaceChildren(...tiles.map(([k, t, n]) => el('button', { type: 'button', class: `tile t-${k}`, 'aria-pressed': String(filter === k), onclick: () => setFilter(filter === k ? 'all' : k) }, [
+    el('b', { text: String(n) }), el('span', { text: t }),
+  ])));
+}
+
+function setFilter(k) {
+  filter = k;
+  drawFilters();
+  drawOrders();
+  $$('#sum .tile').forEach(t => t.setAttribute('aria-pressed', String(t.classList.contains(`t-${k}`))));
+}
+
+function drawFilters() {
+  $('#ofilter').replaceChildren(...FILTERS.map(([k, t, f]) => {
+    const n = orders.filter(f).length;
+    return el('button', { type: 'button', class: 'chip', 'aria-pressed': String(filter === k), onclick: () => setFilter(k) }, [
+      el('span', { text: t }), el('small', { text: String(n) }),
+    ]);
+  }));
+}
+
+function skeleton() {
+  $('#orders').replaceChildren(...[0, 1, 2, 3].map(() => el('li', { class: 'orow sk', 'aria-hidden': 'true' }, [el('span', { class: 'sk-a' }), el('span', { class: 'sk-l' }), el('span', { class: 'sk-l s' })])));
+}
+
 async function loadOrders(fresh) {
   if (!owner) return;
+  if (!loadedOnce) skeleton();
   let data;
   try {
     data = await owner.list({ limit: 100 });
   } catch (err) {
     if (err.status === 401) { expired(); return; }
     toast(err.message);
+    if (!loadedOnce) $('#orders').replaceChildren();
     return;
   }
-  const ul = $('#orders');
+  loadedOnce = true;
   const items = data.items || [];
-  ul.replaceChildren(...items.map(o => orderCard(o, fresh && !knownOrders.has(o.number))));
+  const appeared = fresh ? items.filter(o => !knownOrders.has(o.number)).map(o => o.number) : [];
+  orders = items;
   knownOrders = new Set(items.map(o => o.number));
-  $('#orders-empty').hidden = items.length > 0;
   const nc = data.new_count || 0;
   $('#newc').hidden = !nc;
   $('#newc').textContent = nc;
-  document.title = `${nc ? `(${nc}) ` : ''}Кабинет | Электрик.Kg`;
+  document.title = `${nc ? `(${nc}) ` : ''}Заявки | Электрик.Kg`;
+  if (lastNew >= 0 && nc > lastNew) beep();
+  lastNew = nc;
+  drawFilters();
+  drawOrders(appeared);
+  loadSummary();
+  if (picked && orders.some(o => o.number === picked)) openOrder(picked, false);
+  else if (!picked && orders.length && !narrow.matches) openOrder(orders[0].number, false);
 }
 
-function orderCard(o, appeared) {
-  const what = (o.items || []).map(i => i.title).join(', ');
-  const acts = (o.next_statuses || []).map(s => el('button', {
-    type: 'button', class: `btn ${s === 'cancelled' ? 'ghost' : 'blue'}`, text: ACTION[s] || STATUS[s] || s,
-    onclick: async e => {
-      e.currentTarget.disabled = true;
-      try {
-        await owner.setStatus(o.number, s);
-        toast(`Заявка №${o.number}: ${(STATUS[s] || s).toLowerCase()}`);
-        loadOrders();
-      } catch (err) {
-        if (err.status === 401) { expired(); return; }
-    toast(err.message);
-        e.currentTarget.disabled = false;
-      }
-    },
-  }));
-  const li = el('li', { class: `oc${o.status === 'new' ? ' is-new' : ''}` }, [
-    el('div', { class: 'oc-h' }, [
-      el('b', { text: o.name || 'Клиент' }),
-      el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }),
-      el('span', { class: 'oc-no', text: `№${o.number}` }),
-      el('time', { datetime: o.created_at, text: when(o.created_at) }),
+function drawOrders(appeared = []) {
+  const f = (FILTERS.find(x => x[0] === filter) || FILTERS[0])[2];
+  const list = orders.filter(f);
+  const ul = $('#orders');
+  ul.replaceChildren(...list.map(o => orderRow(o, appeared.includes(o.number))));
+  const empty = $('#orders-empty');
+  empty.hidden = list.length > 0;
+  $('b', empty).textContent = orders.length ? 'В этом списке пусто' : 'Заявок пока нет';
+  $('span', empty).textContent = orders.length ? 'Выберите другой фильтр сверху.' : 'Как только клиент отправит заявку с сайта, она появится здесь, а вкладка покажет счётчик.';
+}
+
+function orderRow(o, appeared) {
+  const c = parseComment(o.comment);
+  const what = (c.rows.find(r => /случил/i.test(r[0])) || [])[1] || (o.items || []).map(i => i.title).join(', ');
+  const car = (c.rows.find(r => /авто|машин/i.test(r[0]) && !/стоит/i.test(r[0])) || [])[1] || '';
+  const li = el('li', { class: `orow${o.status === 'new' ? ' is-new' : ''}${o.number === picked ? ' on' : ''}` }, [
+    el('button', { type: 'button', class: 'orow-b', 'aria-current': o.number === picked ? 'true' : null, onclick: () => openOrder(o.number, true) }, [
+      el('span', { class: 'av', 'aria-hidden': 'true', text: initials(o.name) }),
+      el('span', { class: 'orow-t' }, [
+        el('span', { class: 'orow-h' }, [el('b', { text: o.name || 'Клиент' }), el('span', { class: 'no', text: `№${o.number}` })]),
+        el('span', { class: 'orow-w', text: [what, car].filter(Boolean).join(' · ') || 'Без описания' }),
+      ]),
+      el('span', { class: 'orow-r' }, [
+        el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }),
+        el('time', { datetime: o.created_at, text: ago(o.created_at) }),
+      ]),
     ]),
-    el('p', { class: 'oc-p' }, [el('a', { href: `tel:${o.phone}`, text: phoneText(o.phone) }), document.createTextNode('  '),
-      el('a', { href: `https://wa.me/${String(o.phone || '').replace(/\D/g, '')}`, target: '_blank', rel: 'noopener', text: 'WhatsApp' })]),
-    what ? el('p', { class: 'oc-c', text: what }) : null,
-    o.comment ? el('p', { class: 'oc-c', text: o.comment }) : null,
-    acts.length ? el('div', { class: 'oc-a' }, acts) : null,
   ]);
-  if (appeared) li.animate([{ background: 'rgba(26,92,255,.35)' }, { background: 'transparent' }], { duration: 1600 });
+  if (appeared) li.classList.add('fresh');
   return li;
 }
+
+async function openOrder(number, user) {
+  picked = number;
+  $$('#orders .orow').forEach(li => {
+    const on = $('.no', li) && $('.no', li).textContent === `№${number}`;
+    li.classList.toggle('on', on);
+    $('.orow-b', li).setAttribute('aria-current', on ? 'true' : 'false');
+  });
+  const box = $('#odet');
+  const base = orders.find(o => o.number === number);
+  if (user) {
+    box.replaceChildren(detail(base || { number }, true));
+    if (narrow.matches) { box.classList.add('open'); document.body.classList.add('det-open'); box.focus({ preventScroll: true }); }
+  }
+  let full;
+  try { full = await owner.get(number); } catch (err) { if (err.status === 401) { expired(); return; } if (user) toast(err.message); return; }
+  if (picked !== number) return;
+  const note = $('.note-in', box);
+  const draft = note && document.activeElement === note ? note.value : null;
+  box.replaceChildren(detail(full, false));
+  if (draft !== null) { const n = $('.note-in', box); n.value = draft; n.focus(); }
+}
+
+function closeDetail() {
+  const box = $('#odet');
+  box.classList.remove('open');
+  document.body.classList.remove('det-open');
+  const li = $('#orders .orow.on .orow-b');
+  if (li) li.focus({ preventScroll: true });
+}
+
+function detail(o, loading) {
+  const c = parseComment(o.comment);
+  const acts = (o.next_statuses || []).map(s => el('button', {
+    type: 'button', class: `btn ${s === 'cancelled' || s === 'no_show' ? 'ghost' : 'send'} act`,
+    onclick: async e => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+      try {
+        const nv = await owner.setStatus(o.number, s);
+        Object.assign(o, nv);
+        const k = orders.findIndex(x => x.number === o.number);
+        if (k >= 0) orders[k] = Object.assign(orders[k], nv);
+        toast(`Заявка №${o.number}: ${(nv.status_title || STATUS[s] || s).toLowerCase()}`);
+        drawFilters();
+        drawOrders();
+        loadSummary();
+        $('#odet').replaceChildren(detail(nv, false));
+        if (!narrow.matches) $$('#orders .orow').forEach(li => li.classList.toggle('on', $('.no', li).textContent === `№${o.number}`));
+      } catch (err) {
+        if (err.status === 401) { expired(); return; }
+        toast(err.message);
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+      }
+    },
+  }, [el('span', { text: ACTION[s] || STATUS[s] || s })]));
+  const hist = (o.history || []).map(h => el('li', { class: `htl-i ${h.status}` }, [
+    el('b', { text: (o.kind === 'booking' ? STATUS[h.status] : ORDER_T[h.status]) || STATUS[h.status] || h.status }),
+    el('span', { text: `${h.actor === 'client' ? 'клиент с сайта' : 'вы'}, ${when(h.at)}` }),
+  ]));
+  const note = el('textarea', { class: 'note-in', rows: '3', maxlength: '2000', placeholder: 'Например: перезвонил, едет к 18:00. Клиент заметку не видит.', 'aria-label': 'Заметка к заявке' });
+  note.value = o.note || '';
+  const noteSt = el('span', { class: 'note-st', 'aria-live': 'polite' });
+  let saved = o.note || '';
+  const saveNote = async () => {
+    const v = note.value.trim();
+    if (v === saved) return;
+    noteSt.textContent = 'Сохраняем…';
+    try {
+      const nv = await owner.setNote(o.number, v);
+      saved = nv.note || '';
+      o.note = saved;
+      noteSt.textContent = 'Сохранено';
+    } catch (err) {
+      if (err.status === 401) { expired(); return; }
+      noteSt.textContent = err.message;
+    }
+  };
+  note.addEventListener('blur', saveNote);
+  note.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); note.blur(); } });
+  const tel = o.phone ? `tel:${String(o.phone).replace(/[^\d+]/g, '')}` : null;
+  const facts = [...c.rows];
+  const items = (o.items || []).map(i => i.title).filter(Boolean);
+  if (items.length && !facts.some(r => /случил/i.test(r[0]))) facts.unshift(['Услуги', items.join(', ')]);
+  if (o.address) facts.push(['Адрес', o.address]);
+  return el('div', { class: `od${loading ? ' loading' : ''}` }, [
+    el('div', { class: 'od-top' }, [
+      el('button', { type: 'button', class: 'od-back', 'aria-label': 'К списку заявок', onclick: closeDetail }, [icon('left'), el('span', { text: 'Заявки' })]),
+      el('span', { class: 'no', text: `№${o.number}` }),
+      o.status ? el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] }) : null,
+      o.created_at ? el('time', { datetime: o.created_at, title: when(o.created_at), text: ago(o.created_at) }) : null,
+    ]),
+    el('h2', { class: 'od-name', text: o.name || 'Клиент' }),
+    o.phone ? el('a', { class: 'od-tel', href: tel, translate: 'no', text: phoneText(o.phone) }) : el('span', { class: 'sk-l' }),
+    el('div', { class: 'od-call' }, [
+      el('a', { class: 'btn call', href: tel || '#' }, [icon('phone'), el('span', { text: 'Позвонить' })]),
+      el('a', { class: 'btn wa', href: waLink(o.phone, o), target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
+    ]),
+    facts.length || c.rest ? el('dl', { class: 'od-facts' }, [
+      ...facts.map(([k, v]) => el('div', {}, [el('dt', { text: k }), el('dd', { text: v })])),
+      c.rest ? el('div', {}, [el('dt', { text: 'Комментарий' }), el('dd', { text: c.rest })]) : null,
+    ]) : null,
+    acts.length ? el('div', { class: 'od-acts' }, [el('p', { class: 'od-k', text: 'Дальше' }), el('div', { class: 'od-act-row' }, acts)]) : null,
+    el('div', { class: 'od-note' }, [el('p', { class: 'od-k' }, [el('span', { text: 'Заметка для себя' }), noteSt]), note]),
+    hist.length ? el('div', { class: 'od-hist' }, [el('p', { class: 'od-k', text: 'История' }), el('ol', { class: 'htl' }, hist)]) : null,
+    el('div', { class: 'od-dock' }, [
+      el('a', { class: 'btn call', href: tel || '#', 'aria-label': 'Позвонить' }, [icon('phone')]),
+      el('a', { class: 'btn wa', href: waLink(o.phone, o), target: '_blank', rel: 'noopener', 'aria-label': 'WhatsApp' }, [icon('wa')]),
+      acts[0] ? (() => { const b = acts[0].cloneNode(true); b.addEventListener('click', () => acts[0].click()); return b; })() : null,
+    ]),
+  ]);
+}
+
+setInterval(() => { $$('#orders time, #odet .od-top time').forEach(t => { const v = ago(t.getAttribute('datetime')); if (v && t.textContent !== v) t.textContent = v; }); }, 30000);
 
 function absUrl(u) {
   if (!u) return '';
@@ -442,7 +679,7 @@ function thumb(v) {
     vid.muted = true;
     box.append(vid);
   } else if (poster) box.append(el('img', { src: poster, alt: '', loading: 'lazy' }));
-  else box.append(el('span', { class: 'vph' }, [icon(v.platform === 'instagram' ? 'instagram' : v.platform === 'tiktok' ? 'tiktok' : 'film'), el('span', { text: PLATFORM[v.platform] || 'Видео' })]));
+  else box.append(el('span', { class: 'vph' }, [el('span', { class: 'vph-top' }, [icon(v.platform === 'instagram' ? 'instagram' : v.platform === 'tiktok' ? 'tiktok' : 'film'), el('span', { text: PLATFORM[v.platform] || 'Видео' })]), icon('mark'), el('b', { text: v.title || 'Без подписи' })]));
   return box;
 }
 
@@ -536,7 +773,7 @@ function fileBlock(v) {
     parts.push(el('p', { class: 'vf-st failed', role: 'alert', text: v.fetch_error || 'Не получилось скачать ролик по ссылке.' }));
     parts.push(el('div', { class: 'vf-a' }, [again, pick]));
   } else if (v.video_file_url || status === 'ok') {
-    parts.push(el('p', { class: 'vf-st ok' }, [el('span', { class: 'vf-ok', text: 'Ролик загружен' }), el('span', { text: 'играет на сайте сразу' })]));
+    parts.push(el('p', { class: 'vf-st ok', text: 'Ролик загружен и играет на сайте сразу' }));
   }
   if (status !== 'failed') {
     const row = [pick];
@@ -624,8 +861,10 @@ function videoRow(v, k) {
   });
   const actions = el('div', { class: 'vi-a' }, [
     el('label', { class: 'sw' }, [show, el('span', { text: 'Показывать' })]),
-    el('button', { type: 'button', class: 'btn ghost up', 'aria-label': 'Выше', title: 'Выше', disabled: k === 0, onclick: () => move(k, -1) }, [icon('up')]),
-    el('button', { type: 'button', class: 'btn ghost down', 'aria-label': 'Ниже', title: 'Ниже', disabled: k === videos.length - 1, onclick: () => move(k, 1) }, [icon('down')]),
+    el('span', { class: 'vi-mv' }, [
+      el('button', { type: 'button', class: 'btn ghost up', 'aria-label': 'Раньше', title: 'Показывать раньше', disabled: k === 0, onclick: () => move(k, -1) }, [icon('left')]),
+      el('button', { type: 'button', class: 'btn ghost down', 'aria-label': 'Позже', title: 'Показывать позже', disabled: k === videos.length - 1, onclick: () => move(k, 1) }, [icon('right')]),
+    ]),
     el('span', { class: 'btn ghost filebtn' }, [file, el('span', { text: 'Обложка' })]),
   ]);
   const del = el('button', { type: 'button', class: 'btn ghost', text: 'Удалить' });
@@ -649,15 +888,40 @@ function videoRow(v, k) {
     });
   });
   actions.append(del);
-  return el('li', { class: `vi${v.published === false ? ' off' : ''}`, 'data-id': v.id }, [
-    thumb(v),
+  const st = v.fetch_status === 'pending' ? ['pending', 'Скачиваем…'] : v.fetch_status === 'failed' ? ['failed', 'Ошибка'] : v.video_file_url || v.fetch_status === 'ok' ? ['ok', 'Загружен'] : ['none', 'Только ссылка'];
+  const media = thumb(v);
+  media.append(el('span', { class: `vchip ${st[0]}`, text: st[1] }), el('span', { class: 'vno', text: String(k + 1) }), v.published === false ? el('span', { class: 'vhid', text: 'Скрыто' }) : null);
+  const li = el('li', { class: `vi${v.published === false ? ' off' : ''}`, 'data-id': v.id, draggable: 'true' }, [
+    el('span', { class: 'vi-grip', title: 'Перетащите, чтобы поменять порядок', 'aria-hidden': 'true' }, [icon('grip')]),
+    media,
     el('div', { class: 'vi-b' }, [
-      el('div', { class: 'vi-top' }, [el('span', { text: PLATFORM[v.platform] || 'Видео' }), el('a', { href: v.url, target: '_blank', rel: 'noopener', text: 'Открыть' })]),
+      el('div', { class: 'vi-top' }, [el('span', { text: PLATFORM[v.platform] || 'Видео' }), el('a', { href: v.url, target: '_blank', rel: 'noopener', text: 'Открыть пост' })]),
       title,
       fileBlock(v),
       actions,
     ]),
   ]);
+  li.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('input,button,a,textarea') && e.target !== li) { e.preventDefault(); return; } dragFrom = k; li.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(v.id)); } catch (err) { return; } });
+  li.addEventListener('dragend', () => { li.classList.remove('drag'); $$('#vlist .vi').forEach(x => x.classList.remove('over')); });
+  li.addEventListener('dragover', e => { if (dragFrom === null) return; e.preventDefault(); li.classList.add('over'); });
+  li.addEventListener('dragleave', () => li.classList.remove('over'));
+  li.addEventListener('drop', e => { e.preventDefault(); const from = dragFrom; dragFrom = null; if (from !== null && from !== k) moveTo(from, k); });
+  return li;
+}
+
+let dragFrom = null;
+async function moveTo(from, to) {
+  const ids = videos.map(v => v.id);
+  const [x] = ids.splice(from, 1);
+  ids.splice(to, 0, x);
+  try {
+    videos = await owner.videos.reorder(ids);
+    drawVideos();
+    toast('Порядок сохранён');
+  } catch (err) {
+    if (err.status === 401) { expired(); return; }
+    toast(err.message);
+  }
 }
 
 function addForm() {
@@ -692,5 +956,8 @@ function addForm() {
 authUi();
 tabs();
 addForm();
+soundUi();
+$('#odet').addEventListener('keydown', e => { if (e.key === 'Escape' && $('#odet').classList.contains('open')) closeDetail(); });
+narrow.addEventListener('change', () => { if (!narrow.matches) closeDetail(); });
 session = store(KEY);
 if (session) enterPanel(); else show('s-login');
