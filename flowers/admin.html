@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2ef">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121211">
+<meta name="color-scheme" content="light dark">
+<title>Кабинет | Цветы</title>
+<link rel="preload" href="assets/fonts/onest-cyr.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/admin.css?v=1">
+</head>
+<body class="adm" data-api="https://flowers.169-58-93-73.sslip.io" data-name="Цветы" data-wa="996555000000">
+
+<div class="auth" id="auth">
+  <div class="auth-card">
+    <p class="auth-brand">Цветы<span>кабинет</span></p>
+
+    <section id="s-check" tabindex="-1" aria-live="polite">
+      <h1>Подключаемся…</h1>
+      <p class="note">Проверяем связь с сервером заказов.</p>
+    </section>
+
+    <section id="s-offline" tabindex="-1" hidden>
+      <h1>Сервер ещё не подключён</h1>
+      <p class="note">Кабинет не достучался до сервера заказов. Если сайт только запускается, это нормально: сервер подключим, и здесь появится вход.</p>
+      <div class="auth-acts">
+        <button class="btn btn-accent btn-wide" type="button" id="retry">Проверить ещё раз</button>
+        <a class="btn btn-line btn-wide" href="?demo=1">Открыть демо-кабинет</a>
+      </div>
+    </section>
+
+    <section id="s-login" tabindex="-1" hidden>
+      <h1>Вход</h1>
+      <p class="note" id="login-note">Почта и пароль владельца сайта.</p>
+      <form id="login-f" class="af" novalidate>
+        <label class="f"><span class="f-l">Почта</span><input class="in" id="email" type="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></label>
+        <label class="f"><span class="f-l">Пароль</span><span class="pw"><input class="in" id="pass" type="password" autocomplete="current-password" required><button class="pw-t" type="button" aria-pressed="false">Показать</button></span></label>
+        <p class="f-e" id="login-e" role="alert"></p>
+        <button class="btn btn-accent btn-wide" type="submit">Войти</button>
+      </form>
+    </section>
+
+    <section id="s-setup" tabindex="-1" hidden>
+      <h1>Защита входа</h1>
+      <p class="note">Отсканируйте QR-код в Google Authenticator и введите 6 цифр из приложения.</p>
+      <div class="qr" id="qr"></div>
+      <p class="secret-row"><code id="secret"></code><button class="btn btn-ghost" type="button" id="copy-secret">Скопировать ключ</button></p>
+      <form id="setup-f" class="af" novalidate>
+        <label class="f"><span class="f-l">Код из приложения</span><input class="in code" id="setup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label>
+        <p class="f-e" id="setup-e" role="alert"></p>
+        <button class="btn btn-accent btn-wide" type="submit">Подтвердить</button>
+      </form>
+      <button class="btn btn-ghost btn-wide to-login" type="button">Назад</button>
+    </section>
+
+    <section id="s-totp" tabindex="-1" hidden>
+      <h1 id="totp-h">Код из приложения</h1>
+      <p class="note" id="totp-note">Откройте Google Authenticator и введите 6 цифр.</p>
+      <form id="totp-f" class="af" novalidate>
+        <label class="f"><span class="f-l" id="code-l">Код из приложения</span><input class="in code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label>
+        <p class="f-e" id="totp-e" role="alert"></p>
+        <button class="btn btn-accent btn-wide" type="submit">Войти</button>
+      </form>
+      <button class="btn btn-ghost btn-wide" type="button" id="use-recovery" aria-pressed="false">Нет телефона? Введите резервный код</button>
+      <button class="btn btn-ghost btn-wide to-login" type="button">Назад</button>
+    </section>
+
+    <section id="s-codes" tabindex="-1" hidden>
+      <h1>Резервные коды</h1>
+      <p class="note">Сохраните их: каждый код один раз открывает кабинет, если телефона нет под рукой.</p>
+      <ol class="rcodes" id="rcodes"></ol>
+      <button class="btn btn-line btn-wide" type="button" id="copy-codes">Скопировать коды</button>
+      <label class="check"><input type="checkbox" id="saved"><span>Я сохранил коды</span></label>
+      <button class="btn btn-accent btn-wide" type="button" id="codes-ok" aria-disabled="true">Продолжить</button>
+    </section>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+  <header class="abar">
+    <div class="abar-in">
+      <p class="abar-b">Цветы<span>кабинет</span></p>
+      <div class="tabs" role="tablist" aria-label="Разделы">
+        <button role="tab" id="t-orders" aria-controls="p-orders" aria-selected="true" type="button">Заказы <b class="badge" id="newc" hidden></b></button>
+        <button role="tab" id="t-products" aria-controls="p-products" aria-selected="false" tabindex="-1" type="button">Букеты</button>
+      </div>
+      <div class="abar-r">
+        <a class="btn btn-ghost site-l" href="./" target="_blank" rel="noopener">Сайт</a>
+        <button class="btn btn-ghost" type="button" id="logout">Выйти</button>
+      </div>
+    </div>
+    <p class="demo-bar" id="demo-bar" hidden>Демо-кабинет: изменения не сохраняются</p>
+  </header>
+
+  <section class="panel" id="p-orders" role="tabpanel" aria-labelledby="t-orders">
+    <div class="ofilter" id="ofilter" role="group" aria-label="Фильтр заказов"></div>
+    <div class="ogrid">
+      <div class="olist-w">
+        <ul class="olist" id="orders" aria-label="Заказы"></ul>
+        <div class="empty" id="orders-empty" hidden><b></b><span></span></div>
+      </div>
+      <div class="odet" id="odet" tabindex="-1" aria-label="Карточка заказа"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-products" role="tabpanel" aria-labelledby="t-products" hidden>
+    <div class="phead">
+      <div>
+        <h2>Букеты на сайте</h2>
+        <p class="phint" id="pcount"></p>
+      </div>
+      <button class="btn btn-accent" type="button" id="padd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Добавить букет</button>
+    </div>
+    <p class="pnote" id="pnote" hidden></p>
+    <ul class="pgrid" id="pgrid"></ul>
+    <div class="empty" id="p-empty" hidden><b>Букетов пока нет</b><span>Добавьте первый букет: фото, название и цену. Он сразу появится на сайте.</span></div>
+  </section>
+</div>
+
+<dialog class="sheet esheet" id="editor" aria-labelledby="ed-h">
+  <form class="sheet-in ed" id="ed-f" novalidate>
+    <div class="cs-top">
+      <h2 id="ed-h">Новый букет</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drop" id="drop">
+      <input type="file" id="ed-file" accept="image/jpeg,image/png,image/webp" aria-label="Фото букета">
+      <img id="ed-prev" alt="" hidden>
+      <span class="drop-e" id="drop-e">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l4.5-4.5a2 2 0 012.8 0L16 16m-2-2l1.5-1.5a2 2 0 012.8 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <b>Добавить фото</b><span>Нажмите или перетащите. JPG, PNG или WebP</span>
+      </span>
+    </div>
+    <div class="drop-a" id="drop-a" hidden>
+      <label class="btn btn-line"><input type="file" id="ed-file2" accept="image/jpeg,image/png,image/webp" hidden>Заменить фото</label>
+      <button class="btn btn-ghost" type="button" id="ed-rmph">Убрать фото</button>
+    </div>
+    <label class="f"><span class="f-l">Название</span><input class="in" name="title" maxlength="120" placeholder="Например: Облако" required><span class="f-e" data-e="title"></span></label>
+    <div class="f2">
+      <label class="f"><span class="f-l">Цена, сом</span><input class="in" name="price" inputmode="numeric" maxlength="8" placeholder="3500" required><span class="f-e" data-e="price"></span></label>
+      <label class="f"><span class="f-l">Старая цена <i>для скидки</i></span><input class="in" name="old_price" inputmode="numeric" maxlength="8" placeholder="не обязательно"><span class="f-e" data-e="old_price"></span></label>
+    </div>
+    <div class="f">
+      <label class="f-l" for="ed-cat">Категория</label>
+      <input class="in" id="ed-cat" name="category" maxlength="40" placeholder="Розы, Гортензии, Авторские…" autocomplete="off">
+      <div class="pills" id="ed-cats"></div>
+      <span class="f-e" data-e="category"></span>
+    </div>
+    <label class="f"><span class="f-l">Описание <i>состав, размер</i></span><textarea class="in" name="description" rows="3" maxlength="1000" placeholder="15 роз и эвкалипт, высота около 50 см"></textarea><span class="f-e" data-e="description"></span></label>
+    <div class="sw-row">
+      <label class="sw"><input type="checkbox" name="published" checked><span class="sw-t" aria-hidden="true"></span><span>Показывать на сайте</span></label>
+      <label class="sw"><input type="checkbox" name="in_stock" checked><span class="sw-t" aria-hidden="true"></span><span>В наличии</span></label>
+    </div>
+    <p class="f-e form-e" id="ed-e" role="alert"></p>
+    <div class="ed-foot">
+      <button class="btn btn-accent" type="submit" id="ed-save">Сохранить</button>
+      <span id="ed-del-w"><button class="btn btn-ghost" type="button" id="ed-del">Удалить</button></span>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" role="status" aria-live="polite" id="astatus"></div>
+<template id="ico-left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></template>
+<template id="ico-right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></template>
+<template id="ico-grip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/></svg></template>
+<template id="ico-phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></template>
+<template id="ico-wa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21l1.65-3.8a9 9 0 113.4 2.9L3 21"/><path d="M9 10a.5.5 0 001 0V9a.5.5 0 00-1 0v1a5 5 0 005 5h1a.5.5 0 000-1h-1a.5.5 0 000 1"/></svg></template>
+<script src="assets/catalog.js?v=1"></script>
+<script src="assets/leads-client.js?v=1"></script>
+<script src="assets/admin.js?v=1"></script>
+</body>
+</html>
