@@ -659,6 +659,7 @@ function book() {
         phone: phoneFormat(tel()),
         items,
         comment,
+        source: bookSource(),
         website: form.website.value,
       });
       goal('form_submit', `запись: ${problem()}`);
@@ -747,3 +748,79 @@ const LB = lightbox();
 gallery(LB);
 videos();
 book();
+
+const SRC_KEY = 'el-src';
+const UTM_KEY = 'el-utm';
+const NOT_SERVICE = ['index', 'prices', 'book', 'visit', '404', 'admin'];
+
+function ssGet(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function ssSet(k, v) { try { if (v) sessionStorage.setItem(k, v); else sessionStorage.removeItem(k); } catch (e) { return; } }
+
+function trackSource() {
+  const utm = new URLSearchParams(location.search).get('utm_source');
+  if (utm) ssSet(UTM_KEY, `utm:${utm.trim().slice(0, 36)}`);
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href*="book.html"]');
+    if (!a) return;
+    let src = '';
+    if (a.closest('.xr-sec, #xr')) src = '3d';
+    else if (PAGE === 'prices') src = 'prices';
+    else if (PAGE && !NOT_SERVICE.includes(PAGE)) src = `service:${PAGE}`;
+    else if (a.closest('.hero, #hero-acts')) src = 'hero';
+    ssSet(SRC_KEY, src);
+  }, true);
+}
+
+function bookSource() {
+  return (ssGet(UTM_KEY) || ssGet(SRC_KEY) || '').slice(0, 40) || undefined;
+}
+
+function priceNum(n) { return Number(n).toLocaleString('ru-RU').replace(/\s/g, ' '); }
+
+function swapPrice(node, sv) {
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  let t = walker.nextNode();
+  while (t) {
+    if (/^\s*(от\s*)?\d[\d\s ]*\s*$/.test(t.nodeValue)) {
+      t.nodeValue = t.nodeValue.replace(/\d[\d\s ]*\d|\d/, priceNum(sv.price_from));
+      return true;
+    }
+    t = walker.nextNode();
+  }
+  return false;
+}
+
+function applyPrices(items) {
+  const by = {};
+  items.forEach(s => { if (s && s.slug && s.published !== false && (s.price_from || s.price_text)) by[s.slug] = s; });
+  $$('[data-ps]').forEach(n => {
+    const sv = by[n.dataset.ps];
+    if (!sv) return;
+    if (sv.price_from) {
+      if (!swapPrice(n, sv)) { n.textContent = `от ${priceNum(sv.price_from)} сом`; n.classList.remove('ask'); }
+    } else if (sv.price_text) {
+      n.textContent = sv.price_text;
+    }
+  });
+  if (PAGE !== 'index') return;
+  $$('a[href$=".html"]').forEach(a => {
+    if (a.closest('[data-ps], header, footer, nav')) return;
+    const sv = by[(a.getAttribute('href') || '').replace(/\.html$/, '')];
+    if (sv && sv.price_from) swapPrice(a, sv);
+  });
+}
+
+async function loadPrices() {
+  if (!API || PAGE === 'admin' || !('fetch' in window)) return;
+  try {
+    const r = await fetch(`${API}/api/services`, { headers: { Accept: 'application/json' }, credentials: 'omit' });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data && Array.isArray(data.items) && data.items.length) applyPrices(data.items);
+  } catch (e) {
+    return;
+  }
+}
+
+trackSource();
+loadPrices();

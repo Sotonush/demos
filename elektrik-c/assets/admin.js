@@ -125,6 +125,7 @@ function takeDraft() {
 function stopPanel() {
   if (stopWatch) { stopWatch(); stopWatch = null; }
   owner = null;
+  if (window.crmStop) crmStop();
 }
 
 function showLogin(message) {
@@ -184,6 +185,7 @@ async function enterPanel() {
   }
   owner = window.LeadsClient.owner({ api: API, token: session });
   show('app');
+  if (window.crmEnter) crmEnter();
   const draft = takeDraft();
   if (draft && draft.vurl) $('#vurl').value = draft.vurl;
   loadOrders();
@@ -441,6 +443,7 @@ async function loadOrders(fresh) {
     const [list, sm] = await Promise.all([owner.list({ limit: 100, status: filter || undefined }), owner.summary().catch(() => null)]);
     data = list;
     if (sm) summary = sm;
+    if (sm && window.crmSummary) crmSummary(sm);
   } catch (err) {
     if (err.status === 401) { expired(); return; }
     toast(err.message);
@@ -476,6 +479,7 @@ function orderRow(o, appeared) {
   const b = el('button', { type: 'button', class: 'oc-b', 'aria-current': o.number === selected ? 'true' : 'false' }, [
     el('span', { class: 'oc-top' }, [el('b', { class: 'oc-n', text: o.name || 'Клиент' }), el('span', { class: 'oc-no', text: num(o.number) })]),
     el('span', { class: 'oc-w', text: what || o.comment || 'Без описания' }),
+    window.crmRowTags ? crmRowTags(o) : null,
     el('span', { class: 'oc-f' }, [statusChip(o.status, o.status_title), el('time', { datetime: o.created_at, text: ago(o.created_at) })]),
   ]);
   b.addEventListener('click', () => openOrder(o.number, true));
@@ -503,6 +507,14 @@ async function openOrder(n, user) {
     if (err.status === 401) { expired(); return; }
     if (!base) toast(err.message);
   }
+}
+
+function crmChanged(nv) {
+  const k = orders.findIndex(x => x.number === nv.number);
+  if (k >= 0) orders[k] = Object.assign(orders[k], nv);
+  detailCache.set(nv.number, nv);
+  $('#orders').replaceChildren(...orders.map(o => orderRow(o, false)));
+  if (selected === nv.number) drawDetail(nv);
 }
 
 function closeDetail(fromPop) {
@@ -578,6 +590,7 @@ function drawDetail(o) {
         el('a', { class: 'b b-y', href: `tel:+${digits}` }, [icon('phone'), el('span', { text: 'Позвонить' })]),
         el('a', { class: 'b b-blue', href: `https://wa.me/${digits}`, target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
       ]),
+      window.crmDetail ? crmDetail(o, crmChanged) : null,
       items.length ? el('div', { class: 'od-s' }, [el('h3', { text: 'Что случилось' }), el('ul', { class: 'od-tags' }, items.map(t => el('li', { text: t })))]) : null,
       o.comment ? el('div', { class: 'od-s' }, [el('h3', { text: 'Подробности' }), el('p', { class: 'od-cm', text: o.comment })]) : null,
       el('div', { class: 'od-s' }, [el('h3', {}, [el('label', { for: 'od-note', text: 'Заметка для себя' })]), note, saveNote]),

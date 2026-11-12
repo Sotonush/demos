@@ -126,6 +126,7 @@ function takeDraft() {
 function stopPanel() {
   if (stopWatch) { stopWatch(); stopWatch = null; }
   owner = null;
+  if (window.crmStop) crmStop();
 }
 
 function showLogin(message) {
@@ -185,6 +186,7 @@ async function enterPanel() {
   }
   owner = window.LeadsClient.owner({ api: API, token: session });
   show('app');
+  if (window.crmEnter) crmEnter();
   const draft = takeDraft();
   if (draft && draft.vurl) $('#vurl').value = draft.vurl;
   loadOrders();
@@ -456,6 +458,7 @@ async function loadSummary() {
   if (!owner) return;
   let s;
   try { s = await owner.summary(); } catch (err) { if (err.status === 401) expired(); return; }
+  if (window.crmSummary) crmSummary(s);
   const b = s.by_status || {};
   const tiles = [
     ['new', 'Новые', b.new || 0],
@@ -539,6 +542,7 @@ function orderRow(o, appeared) {
       el('span', { class: 'orow-t' }, [
         el('span', { class: 'orow-h' }, [el('b', { text: o.name || 'Клиент' }), el('span', { class: 'no', text: `№${o.number}` })]),
         el('span', { class: 'orow-w', text: [what, car].filter(Boolean).join(' · ') || 'Без описания' }),
+        window.crmRowTags ? crmRowTags(o) : null,
       ]),
       el('span', { class: 'orow-r' }, [
         el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }),
@@ -570,6 +574,13 @@ async function openOrder(number, user) {
   const draft = note && document.activeElement === note ? note.value : null;
   box.replaceChildren(detail(full, false));
   if (draft !== null) { const n = $('.note-in', box); n.value = draft; n.focus(); }
+}
+
+function crmChanged(nv) {
+  const k = orders.findIndex(x => x.number === nv.number);
+  if (k >= 0) orders[k] = Object.assign(orders[k], nv);
+  drawOrders();
+  if (picked === nv.number) $('#odet').replaceChildren(detail(nv, false));
 }
 
 function closeDetail() {
@@ -649,6 +660,7 @@ function detail(o, loading) {
       el('a', { class: 'btn call', href: tel || '#' }, [icon('phone'), el('span', { text: 'Позвонить' })]),
       el('a', { class: 'btn wa', href: waLink(o.phone, o), target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
     ]),
+    window.crmDetail ? crmDetail(o, crmChanged) : null,
     facts.length || c.rest ? el('dl', { class: 'od-facts' }, [
       ...facts.map(([k, v]) => el('div', {}, [el('dt', { text: k }), el('dd', { text: v })])),
       c.rest ? el('div', {}, [el('dt', { text: 'Комментарий' }), el('dd', { text: c.rest })]) : null,

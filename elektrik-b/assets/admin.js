@@ -123,6 +123,7 @@ function takeDraft() {
 function stopPanel() {
   if (stopWatch) { stopWatch(); stopWatch = null; }
   owner = null;
+  if (window.crmStop) crmStop();
 }
 
 function showLogin(message) {
@@ -181,6 +182,7 @@ async function enterPanel() {
   }
   owner = window.LeadsClient.owner({ api: API, token: session });
   show('app');
+  if (window.crmEnter) crmEnter();
   const draft = takeDraft();
   if (draft && draft.vurl) $('#vurl').value = draft.vurl;
   drawFilters();
@@ -412,6 +414,7 @@ async function loadSummary() {
   if (!owner) return;
   try {
     const s = await owner.summary();
+    if (window.crmSummary) crmSummary(s);
     const by = s.by_status || {};
     const cell = (k, t) => el('li', { class: `sum-${k}` }, [el('b', { text: by[k] || 0 }), el('span', { text: t })]);
     $('#sum').replaceChildren(cell('new', 'новых'), cell('accepted', 'в работе'), cell('ready', 'готовы'), cell('done', 'выполнено'));
@@ -462,6 +465,7 @@ function orderCard(o, appeared) {
   const b = el('button', { type: 'button', class: 'oc-b', 'aria-label': `Заявка №${o.number}, ${o.name || 'клиент'}` }, [
     el('span', { class: 'oc-h' }, [el('b', { text: o.name || 'Клиент' }), el('time', { datetime: o.created_at, text: ago(o.created_at) })]),
     el('span', { class: 'oc-w', text: what || o.comment || 'Без описания' }),
+    window.crmRowTags ? crmRowTags(o) : null,
     el('span', { class: 'oc-f' }, [el('span', { class: `st ${o.status}`, text: o.status_title || STATUS[o.status] || o.status }), el('span', { class: 'oc-no', text: `№${o.number}` })]),
   ]);
   b.addEventListener('click', () => openOrder(o.number, true));
@@ -488,6 +492,13 @@ async function openOrder(number, focus) {
   box.classList.remove('loading');
   drawDetail(o);
   if (focus) box.focus({ preventScroll: true });
+}
+
+function crmChanged(nv) {
+  const k = orders.findIndex(x => x.number === nv.number);
+  if (k >= 0) orders[k] = Object.assign(orders[k], nv);
+  $('#orders').replaceChildren(...orders.map(o => orderCard(o, false)));
+  if (String(selected) === String(nv.number)) drawDetail(nv);
 }
 
 function closeOrder() {
@@ -543,6 +554,7 @@ function drawDetail(o) {
         el('a', { class: 'btn call sm', href: `tel:${o.phone}` }, [icon('phone'), el('span', { text: 'Позвонить' })]),
         el('a', { class: 'btn wa sm', href: waLink(o), target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
       ]),
+      window.crmDetail ? crmDetail(o, crmChanged) : null,
       el('dl', { class: 'od-dl' }, [
         what ? el('div', {}, [el('dt', { text: 'Что случилось' }), el('dd', { text: what })]) : null,
         o.comment ? el('div', {}, [el('dt', { text: 'Подробности' }), el('dd', { class: 'pre', text: o.comment })]) : null,
