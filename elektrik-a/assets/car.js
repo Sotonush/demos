@@ -32,6 +32,8 @@ if (root && dataEl) {
     const go = card.querySelector('.xr-go');
     go.href = `book.html?s=${p.s}`;
     go.dataset.label = p.t;
+    const more = card.querySelector('.xr-more');
+    if (more && p.u) { more.href = p.u; more.dataset.label = p.t; }
     card.hidden = false;
   };
 

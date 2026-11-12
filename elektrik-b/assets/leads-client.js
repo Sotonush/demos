@@ -7,6 +7,7 @@
   var POLL_PAUSE_MS = 3000;
   var POSTER_MAX_BYTES = 1024 * 1024;
   var POSTER_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  var PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
   function LeadsError(message, status, fields) {
     this.name = "LeadsError";
@@ -109,6 +110,16 @@
         return withRetry(function () { return call(api, "GET", "/api/videos"); }).then(function (data) {
           return (data && data.items) || [];
         });
+      },
+      products: function () {
+        return withRetry(function () { return call(api, "GET", "/api/products"); }).then(function (data) {
+          return (data && data.items) || [];
+        });
+      },
+      categories: function () {
+        return withRetry(function () { return call(api, "GET", "/api/products/categories"); }).then(function (data) {
+          return (data && data.items) || [];
+        });
       }
     };
   }
@@ -170,6 +181,26 @@
       form.append("file", file, file.name || "poster");
       return owned("POST", path, { form: form });
     }
+    function productPath(id) { return "/api/owner/products/" + encodeURIComponent(Number(id)); }
+    function uploadPhoto(id, file) {
+      var path = productPath(id) + "/photo";
+      if (typeof file === "string") {
+        return send("POST", path, { data: file });
+      }
+      if (!file || typeof file.size !== "number") {
+        return Promise.reject(new LeadsError("Выберите фото товара", 422, { file: "Выберите файл" }));
+      }
+      if (file.type && POSTER_TYPES.indexOf(file.type) === -1) {
+        return Promise.reject(new LeadsError("Фото должно быть в формате JPG, PNG или WebP", 422, { file: "Фото должно быть в формате JPG, PNG или WebP" }));
+      }
+      var limit = config.photoMaxBytes || PHOTO_MAX_BYTES;
+      if (file.size > limit) {
+        return Promise.reject(new LeadsError("Фото должно быть не больше " + Math.round(limit / 1048576) + " МБ", 413));
+      }
+      var form = new FormData();
+      form.append("file", file, file.name || "photo");
+      return owned("POST", path, { form: form });
+    }
     var auth = {
       login: function (email, password) {
         return call(api, "POST", "/api/owner/auth/login", { body: { email: email, password: password } });
@@ -211,6 +242,18 @@
           return send("PUT", "/api/owner/videos/order", { ids: ids.map(Number) }).then(function (data) { return data.items; });
         },
         uploadPoster: uploadPoster
+      },
+      products: {
+        list: function () { return get("/api/owner/products").then(function (data) { return data.items; }); },
+        get: function (id) { return get(productPath(id)); },
+        create: function (payload) { return send("POST", "/api/owner/products", payload); },
+        update: function (id, patch) { return send("PATCH", productPath(id), patch); },
+        remove: function (id) { return owned("DELETE", productPath(id)); },
+        reorder: function (ids) {
+          return send("PUT", "/api/owner/products/order", { ids: ids.map(Number) }).then(function (data) { return data.items; });
+        },
+        uploadPhoto: uploadPhoto,
+        removePhoto: function (id) { return send("PATCH", productPath(id), { photo: null }); }
       },
       list: function (params) { return get("/api/owner/orders" + query(params)); },
       get: function (number) { return get("/api/owner/orders/" + encodeURIComponent(Number(number))); },
