@@ -441,7 +441,7 @@ async function videos() {
   const blockers = new Set();
   const upd = () => w.classList.toggle('on', pastHero && blockers.size === 0);
   if (hero) new IntersectionObserver(([e]) => { pastHero = !e.isIntersecting; upd(); }, { rootMargin: '0px 0px -30% 0px' }).observe(hero);
-  const ctas = $$('.acts, .cfg-card, .sendbar, .final .bignum, .pp .btn, .foot');
+  const ctas = $$('.acts, .xr-card, .sendbar, .final .bignum, .pp .btn, .foot');
   const io = new IntersectionObserver(es => {
     es.forEach(e => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target)));
     upd();
@@ -492,54 +492,21 @@ function reveal() {
   nodes.forEach(n => io.observe(n));
 }
 
-function webglOk() {
-  try {
-    const c = document.createElement('canvas');
-    return Boolean(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch (e) {
-    return false;
-  }
+function configurator() {
+  if ($('#xr')) import('./xray.js').catch(() => {});
 }
 
-function configurator() {
-  const stage = $('#stage');
-  const card = $('#cfg-card');
-  if (!stage || !card) return;
-  const chips = $$('.cchip');
-  let car = null;
-  let cur = chips[0] && chips[0].dataset.id;
-  const pick = (id, from) => {
-    if (id === cur && card.dataset.id === id) return;
-    cur = id;
-    card.dataset.id = id;
-    chips.forEach(c => c.setAttribute('aria-pressed', String(c.dataset.id === id)));
-    const tpl = $(`template[data-card="${id}"]`);
-    if (tpl) card.replaceChildren(tpl.content.cloneNode(true));
-    if (motion && card.animate) card.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
-    if (car) car.set(id);
-    if (from) {
-      const strip = from.parentElement;
-      if (strip.scrollWidth > strip.clientWidth) strip.scrollTo({ left: from.offsetLeft - (strip.clientWidth - from.offsetWidth) / 2, behavior: motion ? 'smooth' : 'auto' });
-      goal('symptom_filter', from.textContent);
-    }
-  };
-  card.dataset.id = cur;
-  chips.forEach(c => c.addEventListener('click', () => pick(c.dataset.id, c)));
-  if (!motion || !webglOk() || !('IntersectionObserver' in window)) { stage.classList.add('still'); return; }
-  const io = new IntersectionObserver(([e]) => {
-    if (!e.isIntersecting) return;
-    io.disconnect();
-    import('./car3d.js').then(m => {
-      car = m.mountCar($('#car3d'), {
-        model: 'assets/3d/sedan.glb',
-        onReady() { stage.classList.add('live'); car.set(cur); window.__carReady = true; },
-        onFail() { stage.classList.add('still'); },
-      });
-      if (!car) stage.classList.add('still');
-      window.__car = car;
-    }).catch(() => stage.classList.add('still'));
-  }, { rootMargin: '400px 0px' });
-  io.observe(stage);
+function svcMotion() {
+  const grid = $('.sx-grid');
+  if (!grid || !motion || !('IntersectionObserver' in window)) return;
+  const items = $$('.sx', grid);
+  items.forEach((n, k) => n.style.setProperty('--sd', `${-((k * 1.3) % 5.5).toFixed(1)}s`));
+  grid.classList.add('sx-on');
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    e.target.classList.toggle('idle', !e.isIntersecting);
+    if (e.isIntersecting) e.target.classList.add('sx-in');
+  }), { rootMargin: '0px 0px -12% 0px' });
+  items.forEach(n => io.observe(n));
 }
 
 function openWa(text) {
@@ -574,7 +541,7 @@ function book() {
   const steps = ['car', 'sym', 'mode', 'tel'];
   if ($(`.chip[data-id="${q.get('s')}"]`, box)) set.add(q.get('s'));
   if (['call', 'come'].includes(q.get('m'))) st.mode = q.get('m');
-  const soon = ['Сейчас', 'Через час', 'Вечером', 'Ночью', 'Завтра утром'];
+  const soon = ['Сейчас', 'Через час', 'Вечером', 'Завтра утром'];
   $('#soon').replaceChildren(...soon.map(t => el('button', { type: 'button', class: 'chip', 'data-t': t, 'aria-pressed': 'false', text: t })));
   const names = () => $$('.chip:not(.more)', box).filter(b => set.has(b.dataset.id)).map(b => b.textContent);
   const problem = () => [...names(), val('#note')].filter(Boolean).join('; ');
@@ -767,11 +734,96 @@ function book() {
   draw();
 }
 
+function master() {
+  const form = $('#master');
+  if (!form) return;
+  const st = { sending: false, rid: '', geo: '' };
+  const val = id => $(id).value.trim();
+  const tel = () => phoneDigits($('#m-tel').value);
+  const place = () => [val('#m-place'), st.geo].filter(Boolean).join(', ');
+  const text = () => [`Что случилось: ${val('#m-what')}`, `Где машина: ${place()}`, `Авто: ${val('#m-car') || '—'}`].join('\n');
+  const show = id => {
+    form.hidden = id !== 'form';
+    $('#m-done').hidden = id !== 'done';
+    $('#m-fail').hidden = id !== 'fail';
+    if (id !== 'form') {
+      const s = $(`#m-${id}`);
+      s.focus({ preventScroll: true });
+      s.scrollIntoView({ block: 'center', behavior: motion ? 'smooth' : 'auto' });
+    }
+  };
+  const bad = (sel, msg) => {
+    const f = $(sel);
+    f.setAttribute('aria-invalid', 'true');
+    $('#m-err').textContent = msg;
+    f.focus();
+    return false;
+  };
+  const check = () => {
+    $$('[aria-invalid]', form).forEach(f => f.removeAttribute('aria-invalid'));
+    $('#m-err').textContent = '';
+    if (val('#m-what').length < 3) return bad('#m-what', 'Опишите, что случилось.');
+    if (!place()) return bad('#m-place', 'Укажите, где машина, или нажмите «Моё местоположение».');
+    if (tel().length !== 12) return bad('#m-tel', 'Введите телефон полностью, например +996 555 12 34 56.');
+    return true;
+  };
+  $('#m-geo').addEventListener('click', () => {
+    const t = $('#m-geo-t');
+    if (!navigator.geolocation) { t.textContent = 'Телефон не даёт определить место. Напишите адрес или ориентир.'; return; }
+    t.textContent = 'Определяем…';
+    navigator.geolocation.getCurrentPosition(p => {
+      const { latitude: la, longitude: lo } = p.coords;
+      st.geo = `https://2gis.kg/geo/${lo.toFixed(6)},${la.toFixed(6)}`;
+      t.textContent = 'Место определено, мастер увидит его на карте.';
+      $('#m-place').removeAttribute('aria-invalid');
+    }, () => { t.textContent = 'Не получилось определить место. Напишите адрес или ориентир.'; }, { enableHighAccuracy: true, timeout: 10000 });
+  });
+  $('#m-wa').addEventListener('click', () => {
+    goal('whatsapp', 'вызов мастера в WhatsApp');
+    openWa(`Здравствуйте! Нужен выезд мастера.\n${text()}${tel().length === 12 ? `\nТелефон: ${phoneFormat(tel())}` : ''}`);
+  });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (st.sending || !check()) return;
+    if (!window.LeadsClient || !API) { $('#m-fail-t').textContent = 'Сервис заявок сейчас недоступен. Позвоните или отправьте в WhatsApp.'; show('fail'); return; }
+    st.sending = true;
+    const send = $('#m-send');
+    send.setAttribute('aria-busy', 'true');
+    $('span', send).textContent = 'Отправляем…';
+    const client = window.LeadsClient.create({ api: API });
+    if (!st.rid) st.rid = client.newRequestId();
+    try {
+      const res = await client.submit({
+        kind: 'order',
+        client_request_id: st.rid,
+        name: 'Клиент',
+        phone: phoneFormat(tel()),
+        items: [{ title: 'Выезд мастера' }],
+        comment: text().slice(0, 1000),
+        source: 'master',
+        website: form.website.value,
+      });
+      goal('form_submit', 'вызов мастера');
+      $('#m-done-t').textContent = `Заявка №${res.number} принята. Мастер перезвонит на ${phoneFormat(tel())}, уточнит детали и выедет.`;
+      st.rid = '';
+      show('done');
+    } catch (err) {
+      if (err && err.status === 422 && err.fields && err.fields.phone) bad('#m-tel', err.fields.phone);
+      else { $('#m-fail-t').textContent = (err && err.message) || 'Не удалось отправить заявку.'; show('fail'); }
+    } finally {
+      st.sending = false;
+      send.removeAttribute('aria-busy');
+      $('span', send).textContent = 'Вызвать мастера';
+    }
+  });
+}
+
 kinetic();
 reveal();
 header();
 dock();
 configurator();
+svcMotion();
 menu();
 fitChips();
 finder();
@@ -779,10 +831,11 @@ const LB = lightbox();
 gallery(LB);
 videos();
 book();
+master();
 
 const SRC_KEY = 'el-src';
 const UTM_KEY = 'el-utm';
-const NOT_SERVICE = ['index', 'prices', 'book', 'visit', '404', 'admin'];
+const NOT_SERVICE = ['index', 'prices', 'book', 'master', 'visit', '404', 'admin'];
 
 function ssGet(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
 function ssSet(k, v) { try { if (v) sessionStorage.setItem(k, v); else sessionStorage.removeItem(k); } catch (e) { return; } }
