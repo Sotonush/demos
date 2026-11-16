@@ -452,7 +452,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .l-qs .rv:first-child figcaption{color:var(--muted)}
 .l-qs .rv{border:2px solid var(--line)}
 .l-fig{margin:0}
-.l-fig img{border-radius:var(--r);width:100%}
+.l-fig img{border-radius:var(--r);width:100%;height:auto}
 .l-fig figcaption{font-size:14px;color:var(--muted);margin-top:8px}
 
 .grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
@@ -891,3 +891,7 @@ legend.fh{float:left}
 @media (min-width:1200px){.rv-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .rv:first-child::before{background-image:url(../img/mark-w.webp)}
 .l-qs .rv:first-child::before{background-image:url(../img/mark-b.webp)}
+.dock a{min-width:0;padding-inline:14px}
+.d-call b{font-size:clamp(14px,4.3vw,18px);font-stretch:105%}
+.d-call .i{flex:none}
+@media (max-width:400px){.d-wa{flex:0 0 56px!important;padding:0!important}.d-wa>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.d-wa .i{width:26px;height:26px}}
