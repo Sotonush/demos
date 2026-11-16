@@ -173,8 +173,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .od-no{font-family:var(--disp);font-weight:880;font-stretch:115%;font-size:20px;color:var(--ink)}
 .od-name{font-family:var(--disp);font-weight:880;font-stretch:70%;text-transform:uppercase;font-size:clamp(28px,3vw,40px);line-height:.95;overflow-wrap:anywhere}
 .od-tel{font-family:var(--disp);font-weight:880;font-stretch:118%;font-size:clamp(24px,2.4vw,32px);color:var(--blue);line-height:1;width:max-content;max-width:100%}
-.od-c{display:flex;gap:8px;flex-wrap:wrap}
-.od-c .b{flex:1 1 140px}
+.od-c{display:flex;gap:8px}
+.od-c .b{flex:1 1 0;min-width:0}
 .od-s{display:grid;gap:8px;padding-top:14px;border-top:2px solid var(--soft)}
 .od-s h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 .od-tags{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
@@ -479,7 +479,7 @@ textarea.crm-in{resize:vertical;min-height:84px;line-height:1.5}
 .crm-st-c .crm-k{margin-top:0}
 .crm-hb{display:flex;flex-direction:column;gap:12px}
 .crm-hb li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
-.crm-hb-t{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crm-hb-t{font-size:.9rem;overflow-wrap:anywhere;hyphens:auto}
 .crm-hb-n{font-weight:700;font-variant-numeric:tabular-nums;font-size:.9rem}
 .crm-hb-b{grid-column:1/-1;height:8px;border-radius:4px;background:var(--soft)}
 .crm-hb-b i{display:block;height:100%;border-radius:4px;background:var(--blue)}
@@ -594,3 +594,9 @@ textarea.crm-in{resize:vertical;min-height:84px;line-height:1.5}
 .mk .mk-w{display:none}
 .au-mk .mk-b,.side-brand .mk-b{display:none}
 .au-mk .mk-w,.side-brand .mk-w{display:block}
+@media (max-width:900px){.crm-ci-t span{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}}
+.oc-nn{color:var(--muted);font-weight:600}
+.oc.oc-master{border-left-color:#c8323a}
+.od-tel.od-big{font-size:clamp(30px,3.2vw,44px);width:auto}
+.od-cb{background:var(--soft);color:var(--blue-d);border-radius:999px;padding:3px 10px;font-weight:650;font-size:13px}
+.od-in{padding-bottom:calc(var(--oda,0px) + 16px)}

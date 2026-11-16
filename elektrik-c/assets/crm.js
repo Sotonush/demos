@@ -1,6 +1,6 @@
 const CRM_CFG = (() => { try { return JSON.parse(document.getElementById('crm-cfg').textContent); } catch (e) { return { services: [], pages: {}, review_url: '', name: '' }; } })();
 const BK = 'Asia/Bishkek';
-const SRC_T = { '3d': '3D-машина', prices: 'Прайс', hero: 'Главный экран' };
+const SRC_T = { '3d': 'Главная, 3D-машина', '3D-машина': 'Главная, 3D-машина', hero: 'Главная, первый экран', prices: 'Прайс', master: 'Вызов мастера' };
 const crm = { clients: null, cursor: null, q: '', pick: null, services: null, period: 30, stats: null, tg: null, tgLink: null, tgPoll: null, due: [], loaded: {} };
 
 function crmPlural(n, a, b, c) {
@@ -82,7 +82,7 @@ function crmSource(s) {
   const v = String(s || '');
   if (!v) return '';
   if (SRC_T[v]) return SRC_T[v];
-  if (v.startsWith('service:')) { const slug = v.slice(8); return `Страница услуги: ${CRM_CFG.pages[slug] || slug}`; }
+  if (v.startsWith('service:')) { const slug = v.slice(8); return `Услуга: ${CRM_CFG.pages[slug] || slug}`; }
   if (v.startsWith('utm:')) return `Реклама: ${v.slice(4)}`;
   return v;
 }
@@ -135,7 +135,7 @@ function crmCallback(o, onChange) {
   const box = el('div', { class: 'crm-cb' });
   const open = !['done', 'cancelled', 'no_show'].includes(o.status);
   if (!open && !o.callback_at) return null;
-  const head = el('p', { class: 'crm-k' }, [el('span', { text: 'Перезвонить' })]);
+  const head = el('p', { class: 'crm-k' }, [el('span', { text: 'Напомнить мне перезвонить' })]);
   box.append(head);
   if (o.callback_at) {
     const due = new Date(o.callback_at).getTime() <= Date.now();
@@ -235,7 +235,7 @@ function crmOpenOrder(number) {
 }
 
 function crmStatus(o) {
-  const t = o.status_title || (typeof STATUS !== 'undefined' && STATUS[o.status]) || o.status;
+  const t = (typeof STATUS !== 'undefined' && STATUS[o.status]) || o.status_title || o.status;
   return el('span', { class: `crm-st crm-st-${o.status}`, text: t });
 }
 
@@ -300,10 +300,11 @@ function crmDrawClients(loading) {
       el('span', { class: 'crm-ci-r' }, [el('b', { text: `${c.orders_count} ${crmPlural(c.orders_count, 'заявка', 'заявки', 'заявок')}` }), el('span', { text: crmLastVisit(c.last_order_at) })]),
     ])]);
   }));
+  if (!crm.pick && !loading && list.length && !matchMedia('(max-width: 900px)').matches) { crmOpenClient(list[0].id, true); }
   $('#crm-cl-more').replaceChildren(crm.cursor ? el('button', { type: 'button', class: 'btn ghost sm', text: 'Показать ещё', onclick: e => { e.currentTarget.disabled = true; crmLoadClients(true); } }) : '');
 }
 
-async function crmOpenClient(id) {
+async function crmOpenClient(id, auto) {
   const tab = $('#tab-clients');
   if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
   crmClientsUi();
@@ -318,7 +319,7 @@ async function crmOpenClient(id) {
   try { c = await auth('GET', `/api/owner/customers/${encodeURIComponent(id)}`); } catch (err) { crmFail(err); crmCloseClient(); return; }
   if (crm.pick !== id) return;
   d.replaceChildren(crmClientCard(c));
-  d.focus({ preventScroll: true });
+  if (!auto) d.focus({ preventScroll: true });
   d.scrollTop = 0;
   if (matchMedia('(max-width: 900px)').matches) window.scrollTo(0, 0);
 }
@@ -479,7 +480,7 @@ function crmServiceRow(s, k, n) {
     const d = price.value.replace(/\D/g, '');
     const v = d ? Number(d) : null;
     if (v === (s.price_from || null)) return;
-    const ok = await crmPatchService(s, { price_from: v }, v ? `${s.title.split(/[.,:]/)[0]}: от ${crmMoney(v)} сом` : 'Цена убрана');
+    const ok = await crmPatchService(s, { price_from: v }, v ? `${s.title.split(/[.,:]/)[0]}: от\u00a0${crmMoney(v)}\u00a0сом` : 'Цена убрана');
     if (!ok) price.value = s.price_from ? crmMoney(s.price_from) : '';
   });
   text.addEventListener('blur', async () => {

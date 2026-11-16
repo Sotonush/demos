@@ -28,16 +28,29 @@ function header() {
 function dock() {
   const d = $('.dock');
   if (!d) return;
-  const anchor = $('#hero-acts') || $('.lhero .acts') || $('.page');
-  if (!anchor || !('IntersectionObserver' in window)) { d.classList.add('on'); return; }
-  const final = $('.final .acts');
-  const seen = new Map();
-  const io = new IntersectionObserver(es => {
-    es.forEach(e => seen.set(e.target, e.isIntersecting || (e.target === anchor && e.boundingClientRect.top > 0)));
-    d.classList.toggle('on', ![...seen.values()].some(Boolean));
+  const hide = new Set();
+  const update = () => d.classList.toggle('on', scrollY >= 700 && hide.size === 0);
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => e.isIntersecting ? hide.add(e.target) : hide.delete(e.target));
+      update();
+    });
+    $$('main form, .foot, .final .acts').forEach(el => io.observe(el));
+  }
+  addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+function maps() {
+  $$('.map[data-map]').forEach(m => {
+    const b = $('.map-show', m);
+    if (!b) return;
+    b.addEventListener('click', () => {
+      const f = el('iframe', { src: m.dataset.map, title: m.dataset.title || 'Карта', referrerpolicy: 'no-referrer' });
+      m.prepend(f);
+      $('.map-ph', m).hidden = true;
+    });
   });
-  io.observe(anchor);
-  if (final) io.observe(final);
 }
 
 function menu() {
@@ -538,37 +551,39 @@ function book() {
   const set = new Set();
   const st = { mode: null, soon: '', sending: false, rid: '' };
   const val = id => $(id).value.trim();
-  const steps = ['car', 'sym', 'mode', 'tel'];
+  const steps = ['sym', 'mode', 'tel'];
   if ($(`.chip[data-id="${q.get('s')}"]`, box)) set.add(q.get('s'));
   if (['call', 'come'].includes(q.get('m'))) st.mode = q.get('m');
   const soon = ['Сейчас', 'Через час', 'Вечером', 'Завтра утром'];
   $('#soon').replaceChildren(...soon.map(t => el('button', { type: 'button', class: 'chip', 'data-t': t, 'aria-pressed': 'false', text: t })));
+  const SYM_TITLE = { tesla: 'Сервис Tesla', starlink: 'Установка Starlink', otsenka: 'Оценка ущерба после ДТП' };
   const names = () => $$('.chip:not(.more)', box).filter(b => set.has(b.dataset.id)).map(b => b.textContent);
+  const titles = () => $$('.chip:not(.more)', box).filter(b => set.has(b.dataset.id)).map(b => SYM_TITLE[b.dataset.id] || b.textContent);
   const problem = () => [...names(), val('#note')].filter(Boolean).join('; ');
   const place = () => (st.mode === 'come' ? st.soon : val('#place'));
   const tel = () => phoneDigits($('#tel').value);
   const done = {
-    car: () => Boolean(val('#car')),
     sym: () => Boolean(problem()),
     mode: () => Boolean(st.mode && place()),
     tel: () => tel().length === 12,
   };
-  const modeText = () => (st.mode === 'call' ? `Машина стоит: ${place() || '…'}` : st.mode === 'come' ? `Приеду сам: ${place() || '…'}` : '');
+  const modeText = () => (st.mode === 'call' ? `Машина стоит: ${place() || '…'}` : st.mode === 'come' ? `Приеду сам в бокс: ${place() || '…'}` : '');
   const plain = (withPhone = true) => {
-    const l = ['Здравствуйте! Нужна помощь.', `Авто: ${val('#car') || '…'}`, `Что случилось: ${problem() || '…'}`];
+    const l = ['Здравствуйте! Нужна помощь.', `Что случилось: ${problem() || '…'}`];
     if (st.mode) l.push(modeText());
     if (withPhone && tel().length === 12) l.push(`Телефон: ${phoneFormat(tel())}`);
     if (val('#name')) l.push(`Имя: ${val('#name')}`);
+    if (val('#car')) l.push(`Авто: ${val('#car')}`);
     return l.join('\n');
   };
   const prevLines = new Map();
   const preview = () => {
     const lines = [
       ['hi', null, 'Здравствуйте! Нужна помощь.', ''],
-      ['car', 'Авто', val('#car'), 'марка и модель'],
       ['sym', 'Что случилось', problem(), 'поломка'],
       ['mode', st.mode === 'come' ? 'Приеду сам' : 'Где машина', st.mode ? place() : '', st.mode === 'come' ? 'когда приедете' : st.mode === 'call' ? 'адрес или ориентир' : 'стоит или приедете сами'],
       ['tel', 'Телефон', tel().length > 3 ? phoneFormat(tel()) : '', 'номер для звонка'],
+      ['car', 'Авто', val('#car'), 'необязательно'],
     ];
     if (val('#name')) lines.push(['name', 'Имя', val('#name'), '']);
     const out = lines.map(([k, label, v, miss]) => {
@@ -582,14 +597,6 @@ function book() {
     const tm = el('span', { class: 'tm' }, [document.createTextNode('сейчас'), iconSvg('checks')]);
     $('#preview').replaceChildren(...out, tm);
   };
-  const missing = () => {
-    const m = [];
-    if (!done.car()) m.push('машина');
-    if (!done.sym()) m.push('что случилось');
-    if (!done.mode()) m.push(st.mode === 'call' ? 'где машина' : st.mode === 'come' ? 'когда приедете' : 'стоит или приедете');
-    if (!done.tel()) m.push('телефон');
-    return m;
-  };
   const draw = () => {
     $$('.chip:not(.more)', box).forEach(b => b.setAttribute('aria-pressed', String(set.has(b.dataset.id))));
     $$('#soon .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === st.soon)));
@@ -601,10 +608,6 @@ function book() {
     steps.forEach(k => { const ok = done[k](); $(`[data-step="${k}"]`, form).classList.toggle('ok', ok); if (ok) n++; });
     $('#pbar').style.width = `${(n / steps.length) * 100}%`;
     $('#ptext').textContent = n === steps.length ? 'Всё заполнено' : `Готово ${n} из ${steps.length}`;
-    const m = missing();
-    const send = $('#send');
-    send.setAttribute('aria-disabled', String(m.length > 0));
-    $('#need').textContent = m.length ? `Осталось: ${m.join(', ')}` : 'Мастер перезвонит после отправки';
     preview();
   };
   const clearErr = step => {
@@ -623,13 +626,12 @@ function book() {
     const t = $(target, form);
     if (t && t.tagName === 'INPUT') { t.setAttribute('aria-invalid', 'true'); t.setAttribute('aria-describedby', p.id); }
     if (t) t.focus({ preventScroll: true });
-    s.scrollIntoView({ block: 'center', behavior: motion ? 'smooth' : 'auto' });
+    s.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
   const check = (needPhone = true) => {
     const checks = [
-      [!done.car(), 'car', '#car', 'Напишите марку и модель, например Toyota Camry'],
-      [!done.sym(), 'sym', '#sym .chip', 'Отметьте поломку или опишите её своими словами'],
-      [!st.mode, 'mode', '#mode .opt', 'Выберите: машина стоит или приедете сами'],
+      [!done.sym(), 'sym', '#sym .chip', 'Укажите, что случилось: отметьте поломку или опишите её'],
+      [!st.mode, 'mode', '#mode .opt', 'Укажите, где машина: стоит или приедете сами'],
       [st.mode && !place(), 'mode', st.mode === 'call' ? '#place' : '#soon .chip', st.mode === 'call' ? 'Напишите, где стоит машина' : 'Выберите, когда приедете'],
     ];
     if (needPhone) checks.push([!done.tel(), 'tel', '#tel', tel().length > 3 ? 'Номер неполный: нужно +996 и ещё 9 цифр' : 'Укажите телефон, по нему мастер перезвонит']);
@@ -670,7 +672,7 @@ function book() {
   $$('input', form).forEach(i => i.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || i.id === 'tel' || i.id === 'name') return;
     e.preventDefault();
-    const order = ['#car', '#note', '#place', '#tel'];
+    const order = ['#note', '#place', '#tel', '#car'];
     const nx = order.slice(order.indexOf(`#${i.id}`) + 1).map(s => $(s)).find(n => n && n.offsetParent !== null);
     if (nx) nx.focus();
   }));
@@ -691,8 +693,8 @@ function book() {
     send.setAttribute('aria-busy', 'true');
     $('span', send).textContent = 'Отправляем…';
     if (!st.rid) st.rid = window.LeadsClient.create({ api: API }).newRequestId();
-    const items = [{ title: (names().join(', ') || 'Заявка автоэлектрику').slice(0, 120) }];
-    const comment = [`Авто: ${val('#car')}`, `Что случилось: ${problem()}`, modeText()].join('\n').slice(0, 1000);
+    const items = (titles().length ? titles() : ['Заявка автоэлектрику']).slice(0, 8).map(t => ({ title: t.slice(0, 120) }));
+    const comment = [val('#note') && `Комментарий: ${val('#note')}`, st.mode === 'come' ? 'Где машина: Приедет сам в бокс' : `Где машина: ${place()}`, st.mode === 'come' && st.soon && `Когда: ${st.soon.toLowerCase()}`, val('#car') && `Авто: ${val('#car')}`].filter(Boolean).join('\n').slice(0, 1000);
     try {
       const res = await window.LeadsClient.create({ api: API }).submit({
         kind: 'order',
@@ -705,8 +707,8 @@ function book() {
         website: form.website.value,
       });
       goal('form_submit', `запись: ${problem()}`);
-      $('#done-t').textContent = `Заявка №${res.number} принята. Мастер перезвонит на ${phoneFormat(tel())}.`;
-      $('#done-wa').href = `https://wa.me/${WA}?text=${encodeURIComponent(`${plain()}\nЗаявка №${res.number}`)}`;
+      $('#done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит в течение 5 минут на '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
+      $('#done-wa').href = `https://wa.me/${WA}?text=${encodeURIComponent(plain())}`;
       st.rid = '';
       show('done');
     } catch (err) {
@@ -742,6 +744,23 @@ function master() {
   const tel = () => phoneDigits($('#m-tel').value);
   const place = () => [val('#m-place'), st.geo].filter(Boolean).join(', ');
   const text = () => [`Что случилось: ${val('#m-what')}`, `Где машина: ${place()}`, `Авто: ${val('#m-car') || '—'}`].join('\n');
+  const preview = () => {
+    const lines = [
+      ['Что случилось', val('#m-what'), 'опишите поломку'],
+      ['Где машина', place(), 'адрес или ориентир'],
+      ['Телефон', tel().length > 3 ? phoneFormat(tel()) : '', 'номер для звонка'],
+      ['Авто', val('#m-car'), 'необязательно'],
+    ];
+    const out = lines.map(([label, v, miss]) => {
+      const p = el('p');
+      p.append(el('span', { class: 'k', text: `${label}: ` }));
+      p.append(v ? document.createTextNode(v) : el('span', { class: 'mis', text: miss }));
+      return p;
+    });
+    $('#m-preview').replaceChildren(...out);
+  };
+  form.addEventListener('input', preview);
+  preview();
   const show = id => {
     form.hidden = id !== 'form';
     $('#m-done').hidden = id !== 'done';
@@ -799,12 +818,12 @@ function master() {
         name: 'Клиент',
         phone: phoneFormat(tel()),
         items: [{ title: 'Выезд мастера' }],
-        comment: text().slice(0, 1000),
+        comment: [`Комментарий: ${val('#m-what')}`, `Где машина: ${place()}`, val('#m-car') && `Авто: ${val('#m-car')}`].filter(Boolean).join('\n').slice(0, 1000),
         source: 'master',
         website: form.website.value,
       });
       goal('form_submit', 'вызов мастера');
-      $('#m-done-t').textContent = `Заявка №${res.number} принята. Мастер перезвонит на ${phoneFormat(tel())}, уточнит детали и выедет.`;
+      $('#m-done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит в течение 5 минут на '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
       st.rid = '';
       show('done');
     } catch (err) {
@@ -822,6 +841,7 @@ kinetic();
 reveal();
 header();
 dock();
+maps();
 configurator();
 svcMotion();
 menu();
@@ -881,7 +901,7 @@ function applyPrices(items) {
     const sv = by[n.dataset.ps];
     if (!sv) return;
     if (sv.price_from) {
-      if (!swapPrice(n, sv)) { n.textContent = `от ${priceNum(sv.price_from)} сом`; n.classList.remove('ask'); }
+      if (!swapPrice(n, sv)) { n.textContent = `от\u00a0${priceNum(sv.price_from)}\u00a0сом`; n.classList.remove('ask'); }
     } else if (sv.price_text) {
       n.textContent = sv.price_text;
     }

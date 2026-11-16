@@ -5,8 +5,10 @@ const KEY = 'elektrik-owner-session';
 const DRAFT = 'elektrik-owner-draft';
 const NET = 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.';
 const PLATFORM = { youtube: 'YouTube', instagram: 'Instagram', tiktok: 'TikTok', file: 'Файл .mp4' };
-const STATUS = { new: 'Новый', accepted: 'Принят', ready: 'Готов', done: 'Выполнен', cancelled: 'Отменён', confirmed: 'Подтверждена', no_show: 'Не пришёл' };
+const STATUS = { new: 'Новая', accepted: 'Принята', ready: 'Готова', done: 'Выполнена', cancelled: 'Отменена', confirmed: 'Подтверждена', no_show: 'Не пришёл' };
 const ACTION = { accepted: 'Принять', ready: 'Готово', done: 'Выполнено', cancelled: 'Отменить', confirmed: 'Подтвердить', no_show: 'Не пришёл' };
+const TITLE_FIX = { Tesla: 'Сервис Tesla', Starlink: 'Установка Starlink', 'После ДТП': 'Оценка ущерба после ДТП' };
+const PART_KEYS = { 'Комментарий': 'note', 'Что случилось': 'note', 'Где машина': 'where', 'Машина стоит': 'where', 'Адрес': 'where', 'Приеду сам': 'come', 'Когда': 'when', 'Авто': 'car', 'Машина': 'car' };
 const SCREENS = ['s-login', 's-setup', 's-totp', 's-codes', 'app'];
 
 let owner = null;
@@ -404,12 +406,40 @@ function ago(iso) {
   return when(iso);
 }
 
+function orderParts(o) {
+  const p = { note: '', where: '', when: '', car: '', come: false };
+  const rest = [];
+  String(o.comment || '').split('\n').forEach(l => {
+    const m = l.match(/^([^:]{2,20}):\s*(.*)$/);
+    const k = m && PART_KEYS[m[1]];
+    if (!k || !m[2].trim()) { if (l.trim()) rest.push(l.trim()); return; }
+    const v = m[2].trim();
+    if (k === 'come') { p.come = true; p.when = v.toLowerCase(); } else if (k === 'when') p.when = v.toLowerCase(); else p[k] = v;
+  });
+  if (/^Приедет сам/.test(p.where)) p.come = true;
+  p.titles = (o.items || []).map(i => i.title).filter(Boolean).map(t => TITLE_FIX[t] || t);
+  const raw = (o.items || []).map(i => i.title).filter(Boolean).join(', ');
+  if (p.note && raw) {
+    const segs = p.note.split('; ');
+    while (segs.length && segs[0].length > 2 && raw.includes(segs[0])) segs.shift();
+    p.note = segs.join('; ');
+  }
+  if (rest.length) p.note = [p.note, ...rest].filter(Boolean).join('\n');
+  p.master = o.source === 'master' || p.titles[0] === 'Выезд мастера';
+  return p;
+}
+
+function plainName(o) {
+  const n = String(o.name || '').trim();
+  return n && n !== 'Клиент' ? n : '';
+}
+
 function num(n) {
   return `№${Number(n)}`;
 }
 
 function statusChip(code, title) {
-  return el('span', { class: `st st-${code}`, text: title || STATUS[code] || code });
+  return el('span', { class: `st st-${code}`, text: STATUS[code] || title || code });
 }
 
 function skeleton() {
@@ -422,7 +452,7 @@ function drawSummary() {
   const total = Object.values(by).reduce((a, b) => a + b, 0);
   const tiles = [
     ['new', 'Новые', by.new || 0, 'y'],
-    ['accepted', 'В работе', (by.accepted || 0) + (by.ready || 0), 'b'],
+    ['accepted', 'В работе', (by.accepted || 0) + (by.ready || 0), filter === 'accepted' || filter === 'ready' ? 'b' : 'w'],
     ['done', 'Выполнено', by.done || 0, 'w'],
     ['', 'Всего', total, 'w'],
   ];
@@ -475,15 +505,19 @@ async function loadOrders(fresh) {
 }
 
 function orderRow(o, appeared) {
-  const what = (o.items || []).map(i => i.title).filter(Boolean).join(', ');
+  const pt = orderParts(o);
+  let what = pt.note || pt.titles.join(', ');
+  if (what.length > 40) what = `${what.slice(0, 40).trim()}…`;
+  if (pt.master && pt.where) what = `${what} · ${pt.where}`;
+  const nm = plainName(o);
   const b = el('button', { type: 'button', class: 'oc-b', 'aria-current': o.number === selected ? 'true' : 'false' }, [
-    el('span', { class: 'oc-top' }, [el('b', { class: 'oc-n', text: o.name || 'Клиент' }), el('span', { class: 'oc-no', text: num(o.number) })]),
+    el('span', { class: 'oc-top' }, [el('b', { class: `oc-n${nm ? '' : ' oc-nn'}`, text: nm || 'Без имени' }), el('span', { class: 'oc-no', text: num(o.number) })]),
     el('span', { class: 'oc-w', text: what || o.comment || 'Без описания' }),
     window.crmRowTags ? crmRowTags(o) : null,
     el('span', { class: 'oc-f' }, [statusChip(o.status, o.status_title), el('time', { datetime: o.created_at, text: ago(o.created_at) })]),
   ]);
   b.addEventListener('click', () => openOrder(o.number, true));
-  const li = el('li', { class: `oc st-l-${o.status}${appeared ? ' fresh' : ''}`, 'data-n': o.number }, [b]);
+  const li = el('li', { class: `oc st-l-${o.status}${pt.master ? ' oc-master' : ''}${appeared ? ' fresh' : ''}`, 'data-n': o.number }, [b]);
   return li;
 }
 
@@ -530,7 +564,9 @@ function closeDetail(fromPop) {
 function drawDetail(o) {
   const box = $('#detail');
   const digits = String(o.phone || '').replace(/\D/g, '');
-  const items = (o.items || []).map(i => i.title).filter(Boolean);
+  const pt = orderParts(o);
+  const nm = plainName(o);
+  const sec = (h, kids) => el('div', { class: 'od-s' }, [el('h3', { text: h }), ...kids]);
   const back = el('button', { type: 'button', class: 'od-back', 'aria-label': 'К списку заявок' }, [icon('back'), el('span', { text: 'Заявки' })]);
   back.addEventListener('click', () => closeDetail(false));
   const acts = (o.next_statuses || []).map(s => {
@@ -541,7 +577,7 @@ function drawDetail(o) {
       try {
         const res = await owner.setStatus(o.number, s);
         detailCache.delete(o.number);
-        toast(`${num(o.number)}: ${(res && res.status_title || STATUS[s] || s).toLowerCase()}`);
+        toast(`${num(o.number)}: ${(STATUS[s] || res && res.status_title || s).toLowerCase()}`);
         await loadOrders();
       } catch (err) {
         if (err.status === 401) { expired(); return; }
@@ -583,16 +619,19 @@ function drawDetail(o) {
   box.replaceChildren(
     el('div', { class: 'od-in' }, [
       back,
-      el('div', { class: 'od-h' }, [el('span', { class: 'od-no', text: num(o.number) }), statusChip(o.status, o.status_title), el('time', { datetime: o.created_at, title: when(o.created_at), text: ago(o.created_at) })]),
-      el('h2', { class: 'od-name', text: o.name || 'Клиент' }),
-      el('a', { class: 'od-tel', href: `tel:+${digits}`, text: phoneText(o.phone) }),
+      el('div', { class: 'od-h' }, [el('span', { class: 'od-no', text: num(o.number) }), statusChip(o.status, o.status_title), el('time', { datetime: o.created_at, title: when(o.created_at), text: ago(o.created_at) }), o.callback_at && window.crmWhen ? el('span', { class: 'od-cb', text: `Перезвонить ${crmWhen(o.callback_at)}` }) : null]),
+      nm ? el('h2', { class: 'od-name', text: nm }) : null,
+      el('a', { class: nm ? 'od-tel' : 'od-tel od-big', href: `tel:+${digits}`, text: phoneText(o.phone) }),
       el('div', { class: 'od-c' }, [
         el('a', { class: 'b b-y', href: `tel:+${digits}` }, [icon('phone'), el('span', { text: 'Позвонить' })]),
         el('a', { class: 'b b-blue', href: `https://wa.me/${digits}`, target: '_blank', rel: 'noopener' }, [icon('wa'), el('span', { text: 'WhatsApp' })]),
       ]),
+      pt.titles.length ? sec(pt.titles.length > 1 ? 'Услуги' : 'Услуга', [el('ul', { class: 'od-tags' }, pt.titles.map(t => el('li', { text: t })))]) : null,
+      pt.note ? sec('Комментарий клиента', [el('p', { class: 'od-cm', text: pt.note })]) : null,
+      pt.where || pt.come ? sec('Где машина', [el('p', { class: 'od-cm', text: pt.come ? 'Приедет сам в бокс' : pt.where })]) : null,
+      pt.come && pt.when ? sec('Когда', [el('p', { class: 'od-cm', text: pt.when.replace(/^./, c => c.toUpperCase()) })]) : null,
+      pt.car ? sec('Машина', [el('p', { class: 'od-cm', text: pt.car })]) : null,
       window.crmDetail ? crmDetail(o, crmChanged) : null,
-      items.length ? el('div', { class: 'od-s' }, [el('h3', { text: 'Что случилось' }), el('ul', { class: 'od-tags' }, items.map(t => el('li', { text: t })))]) : null,
-      o.comment ? el('div', { class: 'od-s' }, [el('h3', { text: 'Подробности' }), el('p', { class: 'od-cm', text: o.comment })]) : null,
       el('div', { class: 'od-s' }, [el('h3', {}, [el('label', { for: 'od-note', text: 'Заметка для себя' })]), note, saveNote]),
       el('div', { class: 'od-s' }, [el('h3', { text: 'История' }), timeline]),
     ]),
@@ -907,3 +946,9 @@ tabs();
 addForm();
 session = store(KEY);
 if (session) enterPanel(); else show('s-login');
+
+new MutationObserver(() => {
+  const d = $('#detail');
+  const a = d && $('.od-a', d);
+  if (d && a) d.style.setProperty('--oda', `${a.offsetHeight}px`);
+}).observe(document.body, { childList: true, subtree: true });
