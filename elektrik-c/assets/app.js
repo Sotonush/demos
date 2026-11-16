@@ -314,7 +314,7 @@ function reel() {
   const down = el('button', { type: 'button', class: 'rl-b rl-dn', 'aria-label': 'Следующее видео' }, [iconSvg('down')]);
   const snd = el('button', { type: 'button', class: 'rl-s', 'aria-pressed': 'false', 'aria-label': 'Звук' });
   const dots = el('div', { class: 'rl-dots', 'aria-hidden': 'true' });
-  const pre = el('video', { class: 'rl-pre', muted: true, playsinline: true, preload: 'auto', 'aria-hidden': 'true', tabindex: '-1' });
+  const pre = el('video', { class: 'rl-pre', muted: true, playsinline: true, preload: 'metadata', 'aria-hidden': 'true', tabindex: '-1' });
   pre.muted = true;
   panel.append(bg, media, dots, card, snd);
   dlg.append(panel, close, up, down, pre);
@@ -356,7 +356,12 @@ function reel() {
       media.append(it.poster ? el('img', { class: 'rl-poster', src: it.poster, alt: '' }) : placeholder(it.platform, it.title));
     }
     const nx = items[(i + 1) % items.length];
-    if (items.length > 1 && nx.file && pre.getAttribute('src') !== nx.file) pre.src = nx.file;
+    pre.removeAttribute('src');
+    if (items.length > 1 && nx.file && vid) {
+      const cur = vid;
+      const warm = () => { if (vid === cur && pre.getAttribute('src') !== nx.file) pre.src = nx.file; };
+      cur.addEventListener('canplaythrough', warm, { once: true });
+    }
     const name = PLATFORM[it.platform] || 'Источник';
     card.href = it.url;
     card.dataset.label = it.title || it.url;
@@ -432,7 +437,7 @@ async function videos() {
   const list = raw.map(normVideo);
   const first = list[0];
   let thumb;
-  if (first.file) {
+  if (first.file && !first.poster) {
     thumb = el('video', { src: first.file, muted: true, autoplay: motion, loop: true, playsinline: true, preload: 'metadata', poster: first.poster || null, 'aria-hidden': 'true', tabindex: '-1' });
     thumb.muted = true;
   } else if (first.poster) thumb = el('img', { src: first.poster, alt: '', decoding: 'async' });
@@ -444,7 +449,7 @@ async function videos() {
   ]);
   const x = el('button', { type: 'button', class: 'vw-x', 'aria-label': 'Скрыть видео' }, [iconSvg('x')]);
   const w = el('div', { class: 'vw', role: 'complementary', 'aria-label': 'Видео работ' }, [open, x]);
-  open.addEventListener('click', () => { goal('video_open', first.title || first.url); rl.open(list, 0, open); });
+  open.addEventListener('click', () => { if (thumb.tagName === 'VIDEO') { thumb.pause(); thumb.removeAttribute('src'); thumb.load(); } goal('video_open', first.title || first.url); rl.open(list, 0, open); });
   x.addEventListener('click', () => { w.remove(); try { sessionStorage.setItem('vw-off', '1'); } catch (e) { return; } });
   document.body.append(w);
   if (thumb.tagName === 'VIDEO' && motion) { const pl = thumb.play(); if (pl) pl.catch(() => {}); }
