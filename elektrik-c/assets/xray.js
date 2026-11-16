@@ -42,6 +42,7 @@ function init() {
     if (engine) engine.focus(selected);
     if (!selected) return;
     centerChip(selected);
+    if (from === 'hover') return;
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event: 'car_part', page: document.body.dataset.page, label: byKey[selected].t, via: from || '' });
     if (narrow.matches && from) {
@@ -55,7 +56,15 @@ function init() {
     }
   };
 
-  pins.forEach(b => b.addEventListener('click', () => select(b.dataset.k, 'pin')));
+  pins.forEach(b => b.addEventListener('click', () => { if (b.dataset.hov && selected === b.dataset.k) return; select(b.dataset.k, 'pin'); }));
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    pins.forEach(b => b.addEventListener('mouseenter', () => {
+      if (selected === b.dataset.k) return;
+      b.dataset.hov = '1';
+      setTimeout(() => { delete b.dataset.hov; }, 400);
+      select(b.dataset.k, 'hover');
+    }));
+  }
   chips.forEach(b => b.addEventListener('click', () => select(b.dataset.k, 'chip')));
   card.querySelector('.xr-x').addEventListener('click', () => select(selected));
   root.addEventListener('keydown', e => { if (e.key === 'Escape' && selected) select(selected); });
@@ -306,6 +315,7 @@ async function boot(data, root, pins, getSelected, staticShot) {
   const parts = data.parts;
   const anchors = Object.fromEntries(parts.map(p => [p.k, new THREE.Vector3(...p.a)]));
   const views = Object.fromEntries(parts.map(p => [p.k, p.v]));
+  const hlOf = Object.fromEntries(parts.map(p => [p.k, p.hl && p.hl.length ? p.hl : [p.k]]));
   const home = data.home;
   const st = { yaw: home[0], dist: home[1], h: home[2], tx: home[3], ty: home[4], tz: home[5], off: 0, out: 0, far: 1 };
   const goal = { ...st };
@@ -344,11 +354,12 @@ async function boot(data, root, pins, getSelected, staticShot) {
     autoYaw = 0;
     goal.dist = v[1]; goal.h = v[2]; goal.tx = v[3]; goal.ty = v[4]; goal.tz = v[5];
     goal.off = k && w / h > 1.2 ? 0.16 : 0;
-    goal.out = k === 'brake' || k === 'susp' ? 1 : 0;
+    const hl = k ? hlOf[k] || [k] : [];
+    goal.out = hl.includes('brake') || hl.includes('susp') ? 1 : 0;
     goal.far = farFor(k);
     Object.values(mats).forEach(m => { m.userData.on = false; });
-    if (k && mats[k]) mats[k].userData.on = true;
-    wire.material.userData.on = k === 'check';
+    hl.forEach(key => { if (mats[key]) mats[key].userData.on = true; });
+    wire.material.userData.on = hl.includes('check');
     bodyMat.userData.dim = Boolean(k);
     kick();
   };
