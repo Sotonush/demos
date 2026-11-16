@@ -14,7 +14,7 @@ function init() {
   const strip = chips.length ? chips[0].parentElement : null;
   const params = new URLSearchParams(location.search);
   const staticShot = params.has('xrstatic');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches && !staticShot;
+  const reduce = false;
   const narrow = matchMedia('(max-width: 820px)');
   let selected = '';
   let engine = null;

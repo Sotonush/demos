@@ -3,7 +3,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const WA = document.body.dataset.wa;
 const PAGE = document.body.dataset.page;
 const API = (document.body.dataset.api || '').replace(/\/+$/, '');
-const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motion = true;
 const mobile = matchMedia('(max-width: 720px)');
 
 window.dataLayer = window.dataLayer || [];

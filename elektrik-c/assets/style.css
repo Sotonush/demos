@@ -185,7 +185,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .xr-shot,.xr-shot body{background:transparent}
 .xr-shot .xr,.xr-shot .cfg{background:none;box-shadow:none}
 .xr-shot .xr::before,.xr-shot .xr-tri,.xr-shot .pin,.xr-shot .xr-hint,.xr-shot .xr-still{display:none}
-@media (prefers-reduced-motion:no-preference){.pin-d::after{animation:ping 2.6s var(--ease) infinite}.pin:nth-child(2n) .pin-d::after{animation-delay:.6s}.pin:nth-child(3n) .pin-d::after{animation-delay:1.2s}}
+@media all{.pin-d::after{animation:ping 2.6s var(--ease) infinite}.pin:nth-child(2n) .pin-d::after{animation-delay:.6s}.pin:nth-child(3n) .pin-d::after{animation-delay:1.2s}}
 @keyframes ping{0%{transform:scale(1);opacity:.9}70%,100%{transform:scale(2.6);opacity:0}}
 
 .pp{position:relative;background:var(--blue);color:#fff;overflow:hidden;isolation:isolate;padding-block:clamp(64px,9vw,128px)}
@@ -209,7 +209,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .sx-pr.ask{font-weight:600;color:var(--muted)}
 .sx-fig{position:absolute;z-index:0;right:-15%;bottom:-9%;width:84%;pointer-events:none;transition:transform .8s var(--ease)}
 .sx-im{display:block;width:100%;max-width:none;height:auto;transform-origin:50% 85%}
-@media (prefers-reduced-motion:no-preference){
+@media all{
   .sx-on .sx-fig{opacity:0;transform:translate(14%,10%) rotate(6deg) scale(.92);transition:opacity .7s var(--ease),transform 1.1s var(--ease)}
   .sx-on .sx.sx-in .sx-fig{opacity:1;transform:none}
   .sx-on .sx.sx-in .sx-im{animation:sway 5.5s ease-in-out var(--sd,0s) infinite alternate}
@@ -768,11 +768,6 @@ legend.fh{float:left}
   .pp-list .pv b{font-size:24px}
   .facts-b>li{padding:22px}
   .d-call b{font-size:16px}
-}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-  .tape-in{animation:none}
-  .flow i{animation:none}
 }
 @media (max-width:1100px){
 }
