@@ -240,7 +240,6 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
   .sx-feat .sx-t{font-size:19px}
   .sx-feat .sx-fig{width:44%;right:-2%}
 }
-}
 
 .facts-b{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
 .facts-b>li{border-radius:var(--r);padding:28px;position:relative;overflow:hidden;min-height:260px;container-type:inline-size;display:flex;flex-direction:column;justify-content:space-between}
