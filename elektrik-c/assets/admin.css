@@ -68,7 +68,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 
 .au{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
 .au-side{position:relative;background:var(--blue);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
-.au-side::after{content:"";position:absolute;right:-18%;bottom:-14%;width:70%;aspect-ratio:1/1.04;clip-path:url(#tri);background:var(--blue-d)}
+.au-side::after{content:"";position:absolute;right:-14%;bottom:-10%;width:64%;aspect-ratio:80/88;background:url(../img/mark-w-xl.webp) center/contain no-repeat;opacity:.12;transform:rotate(-8deg)}
 .au-mk .mk{width:64px;height:64px}
 .au-mk .mk-t{fill:#fff;stroke:#fff}
 .au-big{position:relative;z-index:1;font-family:var(--disp);font-weight:880;font-stretch:55%;text-transform:uppercase;font-size:clamp(64px,8vw,120px);line-height:.88}

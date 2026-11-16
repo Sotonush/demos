@@ -125,7 +125,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .hero .acts{margin-top:30px}
 .hero-tri{position:relative;margin:0;aspect-ratio:1/1.04;width:100%;max-width:620px;justify-self:end}
 .tri-ph{position:absolute;inset:0;border-radius:var(--r);overflow:hidden;background:var(--blue-dd);box-shadow:0 30px 60px -30px rgba(8,20,60,.6)}
-.hero-tri::before{content:"";position:absolute;z-index:2;left:-26px;top:-26px;width:96px;height:96px;clip-path:url(#tri);background:var(--y);transform:rotate(-12deg);pointer-events:none}
+.hero-tri::before{content:"";position:absolute;z-index:2;left:-26px;top:-30px;width:88px;aspect-ratio:80/88;background:url(../img/mark-w.webp) center/contain no-repeat;filter:drop-shadow(0 10px 18px rgba(6,22,60,.35));transform:rotate(-10deg);pointer-events:none}
 .tri-ph img{width:100%;height:100%;object-fit:cover;object-position:62% 50%}
 .shine{position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.42) 48%,rgba(253,199,3,.35) 52%,transparent 64%);transform:translateX(-110%);animation:sweep 5.5s var(--ease-io) 1.2s infinite;mix-blend-mode:screen}
 
@@ -147,7 +147,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 @media (hover:hover) and (pointer:fine){.cchip:hover{border-color:var(--blue)}}
 .xr{position:relative;isolation:isolate;margin-top:16px;border-radius:var(--r);overflow:hidden;background:radial-gradient(70% 80% at 50% 60%,#2558b4 0,#14306c 55%,#0b1a3f 100%);color:#fff;box-shadow:0 50px 90px -50px rgba(11,31,69,.7)}
 .xr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(160,200,255,.07) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(160,200,255,.07) 1px,transparent 1px) 0 0/48px 48px;-webkit-mask:radial-gradient(80% 90% at 50% 50%,#000 30%,transparent 100%);mask:radial-gradient(80% 90% at 50% 50%,#000 30%,transparent 100%)}
-.xr-tri{position:absolute;z-index:-1;left:-8%;top:-4%;width:min(62%,640px);aspect-ratio:1;clip-path:url(#tri);background:linear-gradient(135deg,rgba(91,138,224,.32),rgba(48,104,199,0) 70%);pointer-events:none}
+.xr-tri{position:absolute;z-index:-1;left:-8%;top:-4%;width:min(56%,600px);aspect-ratio:80/88;background:url(../img/mark-w-xl.webp) center/contain no-repeat;opacity:.07;pointer-events:none}
 .xr-gl{position:relative;aspect-ratio:16/8.5;width:100%}
 .xr-still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .6s var(--ease)}
 .live .xr-still{opacity:0;pointer-events:none}
@@ -172,7 +172,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .live .xr-hint{opacity:1}
 .picked .xr-hint{opacity:0}
 .xr-card{position:absolute;z-index:3;right:clamp(16px,2vw,28px);top:clamp(16px,2vw,28px);width:min(380px,calc(100% - 32px));padding:26px 24px 22px;border-radius:24px;background:#fff;color:var(--ink);box-shadow:0 30px 60px -30px rgba(6,22,60,.8);overflow:hidden}
-.xr-card::before{content:"";position:absolute;right:-38px;top:-48px;width:100px;height:100px;clip-path:url(#tri);background:var(--y);transform:rotate(-14deg);pointer-events:none}
+.xr-card::before{content:"";position:absolute;right:-34px;top:-38px;width:76px;aspect-ratio:80/88;background:url(../img/mark-b.webp) center/contain no-repeat;opacity:.95;transform:rotate(-14deg);pointer-events:none}
 .xr-body{position:relative}
 .xr-t{font-size:clamp(22px,2vw,28px);font-stretch:80%;text-transform:uppercase;padding-right:48px;min-height:36px;line-height:1}
 .xr-d{margin-top:10px;color:var(--muted);font-size:15.5px;line-height:1.45}
@@ -275,7 +275,7 @@ h2.kin>span:nth-child(2){font-stretch:140%;font-size:.62em;color:var(--blue)}
 .rv-row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,30%);gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px;overscroll-behavior-x:contain;scrollbar-width:thin}
 .rv{margin:0;background:#fff;border-radius:var(--r);padding:28px;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:space-between;gap:20px;position:relative;border:2px solid transparent}
 .rv:first-child{background:var(--blue);color:#fff;grid-column:span 1}
-.rv::before{content:"";width:34px;height:34px;clip-path:url(#tri);background:var(--y);display:block}
+.rv::before{content:"";width:36px;aspect-ratio:80/88;background:url(../img/mark-b.webp) center/contain no-repeat;display:block}
 .rv blockquote{margin:0;font-size:18px;line-height:1.45}
 .rv:first-child blockquote{font-size:21px;font-weight:650}
 .rv figcaption{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--muted)}
@@ -546,7 +546,7 @@ legend.fh{float:left}
 .wa-prev{background:var(--blue);border-radius:var(--r);overflow:hidden;color:#fff}
 .wa-top{display:flex;align-items:center;gap:12px;padding:16px 18px;background:var(--blue-dd)}
 .wa-top .logo{margin:0}
-.wa-top .mk-t{fill:#fff;stroke:#fff}.wa-top .mk-o{stroke:#fff}
+.wa-top .mk{height:36px}.wa-top .mk .mk-b{display:none}.wa-top .mk .mk-w{display:block}
 .wa-top>span:last-child{display:flex;flex-direction:column}
 .wa-top small{opacity:.75;font-size:13px}
 .wa-body{padding:18px}
@@ -889,3 +889,5 @@ legend.fh{float:left}
 @media (max-width:420px){.ltrust b{font-size:15px;font-stretch:85%}}
 @media (max-width:1100px){.facts-b>li{min-height:0}.fb-y p,.fb-b p{margin-top:22px}}
 @media (min-width:1200px){.rv-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.rv:first-child::before{background-image:url(../img/mark-w.webp)}
+.l-qs .rv:first-child::before{background-image:url(../img/mark-b.webp)}
