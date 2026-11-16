@@ -42,7 +42,6 @@ function init() {
     if (engine) engine.focus(selected);
     if (!selected) return;
     centerChip(selected);
-    if (from === 'hover') return;
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event: 'car_part', page: document.body.dataset.page, label: byKey[selected].t, via: from || '' });
     if (narrow.matches && from) {
@@ -56,15 +55,10 @@ function init() {
     }
   };
 
-  pins.forEach(b => b.addEventListener('click', () => { if (b.dataset.hov && selected === b.dataset.k) return; select(b.dataset.k, 'pin'); }));
-  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    pins.forEach(b => b.addEventListener('mouseenter', () => {
-      if (selected === b.dataset.k) return;
-      b.dataset.hov = '1';
-      setTimeout(() => { delete b.dataset.hov; }, 400);
-      select(b.dataset.k, 'hover');
-    }));
-  }
+  pins.forEach(b => b.addEventListener('click', () => {
+    if (Date.now() - (+root.dataset.dragEnd || 0) < 350) return;
+    select(b.dataset.k, 'pin');
+  }));
   chips.forEach(b => b.addEventListener('click', () => select(b.dataset.k, 'chip')));
   card.querySelector('.xr-x').addEventListener('click', () => select(selected));
   root.addEventListener('keydown', e => { if (e.key === 'Escape' && selected) select(selected); });
@@ -365,8 +359,8 @@ async function boot(data, root, pins, getSelected, staticShot) {
   };
 
   let drag = null;
-  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false }; });
-  canvas.addEventListener('pointermove', e => {
+  stage.addEventListener('pointerdown', e => { if (e.button > 0) return; drag = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false }; });
+  stage.addEventListener('pointermove', e => {
     if (!drag || drag.id !== e.pointerId) return;
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
@@ -374,7 +368,7 @@ async function boot(data, root, pins, getSelected, staticShot) {
       if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
       if (Math.abs(dx) < 8) return;
       drag.on = true;
-      canvas.setPointerCapture(e.pointerId);
+      stage.setPointerCapture(e.pointerId);
       root.classList.add('dragging');
     }
     userYaw += dx * 0.009;
@@ -382,9 +376,13 @@ async function boot(data, root, pins, getSelected, staticShot) {
     drag.y = e.clientY;
     kick();
   });
-  const end = () => { drag = null; root.classList.remove('dragging'); };
-  canvas.addEventListener('pointerup', end);
-  canvas.addEventListener('pointercancel', end);
+  const end = () => {
+    if (drag && drag.on) root.dataset.dragEnd = String(Date.now());
+    drag = null;
+    root.classList.remove('dragging');
+  };
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', end);
 
   const scrollYaw = () => {
     const r = root.getBoundingClientRect();

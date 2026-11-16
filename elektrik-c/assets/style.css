@@ -829,3 +829,7 @@ legend.fh{float:left}
 .mk .mk-w{display:none}
 .top:not(.solid) .logo .mk-b,.foot .logo .mk-b{display:none}
 .top:not(.solid) .logo .mk-w,.foot .logo .mk-w{display:block}
+
+.pin{touch-action:pan-y}
+.pin-s{display:block;margin-top:3px;max-width:260px;white-space:normal;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;line-height:1.3}
+.pin[aria-pressed=true] .pin-s{display:none}
