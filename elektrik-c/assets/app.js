@@ -3,6 +3,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const WA = document.body.dataset.wa;
 const PAGE = document.body.dataset.page;
 const API = (document.body.dataset.api || '').replace(/\/+$/, '');
+const LOCAL_VIDEOS = (document.body.dataset.vlocal || '').split(' ').filter(Boolean);
 const motion = true;
 const mobile = matchMedia('(max-width: 720px)');
 
@@ -294,7 +295,9 @@ function normVideo(v) {
   const platform = v.platform || 'file';
   const vertical = v.orientation ? v.orientation === 'vertical' : platform !== 'youtube';
   const poster = absUrl(v.poster_url) || (platform === 'youtube' && v.embed_id ? `https://img.youtube.com/vi/${v.embed_id}/hqdefault.jpg` : '');
-  const file = absUrl(v.video_file_url) || (platform === 'file' ? v.url : '');
+  let file = absUrl(v.video_file_url) || (platform === 'file' ? v.url : '');
+  const fname = file ? file.split('?')[0].split('/').pop() : '';
+  if (fname && LOCAL_VIDEOS.includes(fname)) file = `media/videos/${fname}`;
   let embed = '';
   if (platform === 'youtube' && v.embed_id) embed = `https://www.youtube-nocookie.com/embed/${v.embed_id}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${v.embed_id}&rel=0`;
   else if (platform === 'instagram') embed = igEmbed(v.url);
