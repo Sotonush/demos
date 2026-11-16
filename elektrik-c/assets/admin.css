@@ -589,3 +589,8 @@ textarea.crm-in{resize:vertical;min-height:84px;line-height:1.5}
 .crm-cd-n dd{font-stretch:100%;font-size:17px;letter-spacing:-.01em}
 .side-nav .crm-more{display:none}
 @media (max-width:900px){.side-nav .crm-more{display:flex}}
+.mk{display:block}
+.mk img{display:block;width:100%;height:100%;object-fit:contain}
+.mk .mk-w{display:none}
+.au-mk .mk-b,.side-brand .mk-b{display:none}
+.au-mk .mk-w,.side-brand .mk-w{display:block}
