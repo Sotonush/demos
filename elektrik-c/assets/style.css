@@ -898,13 +898,13 @@ legend.fh{float:left}
 .hs-s{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--ease)}
 .hs-s.on{opacity:1}
 .hs-s img{width:100%;height:100%;object-fit:cover}
-.hs-s:first-child img{object-position:62% 50%}
-.hs-s:nth-child(2) img{object-position:50% 45%}
+.hs-tesla img{object-position:62% 50%}
+.hs-fasad img{object-position:50% 45%}
 .hs{touch-action:pan-y}
 .hs-dots{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(15,29,67,.45);backdrop-filter:blur(6px)}
 .hs-dots button{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:width .3s var(--ease),background .3s}
 .hs-dots button.on{width:22px;border-radius:6px;background:var(--y)}
-@media (max-width:860px){.hs-s:first-child img{object-position:50% 30%}}
+@media (max-width:860px){.hs-tesla img{object-position:50% 30%}.hs-fasad img{object-position:42% 50%}}
 .lhero-ph.ban{aspect-ratio:auto}
 .lhero-ph.ban img{object-fit:contain}
 .ldoc{background:#fff}
