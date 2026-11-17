@@ -72,6 +72,32 @@ function minutes(sec) {
   return `${m} ${w}`;
 }
 
+function ask({ title, text = '', yes = 'Да', no = 'Отмена', danger = false }) {
+  return new Promise(resolve => {
+    const prev = document.activeElement;
+    const ok = el('button', { type: 'button', class: `b ${danger ? 'b-danger' : 'b-y'}`, text: yes });
+    const cancel = el('button', { type: 'button', class: 'b b-g', text: no });
+    const dlg = el('dialog', { class: 'ask', 'aria-labelledby': 'ask-t' }, [
+      el('h2', { id: 'ask-t', text: title }),
+      text ? el('p', { text }) : null,
+      el('div', { class: 'ask-a' }, [cancel, ok]),
+    ].filter(Boolean));
+    const done = v => {
+      dlg.close();
+      dlg.remove();
+      if (prev && prev.focus) prev.focus();
+      resolve(v);
+    };
+    ok.addEventListener('click', () => done(true));
+    cancel.addEventListener('click', () => done(false));
+    dlg.addEventListener('cancel', e => { e.preventDefault(); done(false); });
+    dlg.addEventListener('click', e => { if (e.target === dlg) done(false); });
+    document.body.append(dlg);
+    dlg.showModal();
+    cancel.focus();
+  });
+}
+
 async function auth(method, path, body) {
   let r;
   const headers = { Accept: 'application/json' };
@@ -296,6 +322,7 @@ function authUi() {
     if (next) next();
   });
   const out = async () => {
+    if (!await ask({ title: 'Выйти из кабинета?', text: 'Чтобы войти снова, понадобятся пароль и код из приложения.', yes: 'Выйти' })) return;
     try { await auth('POST', '/api/owner/auth/logout'); } catch (e) { session = ''; }
     stopPanel();
     session = '';
@@ -306,6 +333,7 @@ function authUi() {
   $('#logout').addEventListener('click', out);
   $('#logout2').addEventListener('click', out);
   $('#logout-all').addEventListener('click', async () => {
+    if (!await ask({ title: 'Выйти на всех устройствах?', text: 'Кабинет закроется везде, где вы входили, и на этом устройстве тоже.', yes: 'Выйти везде', danger: true })) return;
     try {
       await auth('POST', '/api/owner/auth/logout-all');
     } catch (err) {
@@ -572,6 +600,8 @@ function drawDetail(o) {
   const acts = (o.next_statuses || []).map(s => {
     const btn = el('button', { type: 'button', class: `b ${s === 'cancelled' ? 'b-g' : 'b-y'} b-act`, text: ACTION[s] || STATUS[s] || s });
     btn.addEventListener('click', async () => {
+      if (s === 'cancelled' && !await ask({ title: `Отменить заявку ${num(o.number)}?`, text: 'Заявка перейдёт в «Отменённые».', yes: 'Отменить заявку', no: 'Не отменять', danger: true })) return;
+      if (s === 'no_show' && !await ask({ title: 'Клиент не пришёл?', text: `Заявка ${num(o.number)} будет закрыта с отметкой «Не пришёл».`, yes: 'Да, не пришёл', no: 'Назад' })) return;
       btn.disabled = true;
       btn.setAttribute('aria-busy', 'true');
       try {
@@ -601,6 +631,7 @@ function drawDetail(o) {
   note.value = o.note || '';
   const saveNote = el('button', { type: 'button', class: 'b b-g b-sm', text: 'Сохранить заметку', hidden: true });
   note.addEventListener('input', () => { saveNote.hidden = note.value.trim() === (o.note || ''); });
+  note.addEventListener('blur', () => { if (!saveNote.hidden && !saveNote.disabled) saveNote.click(); });
   saveNote.addEventListener('click', async () => {
     saveNote.disabled = true;
     try {
@@ -797,6 +828,7 @@ function fileBlock(v) {
   } else if (st === 'ok' || v.video_file_url) {
     const drop = el('button', { type: 'button', class: 'linkbtn', text: 'Убрать файл' });
     drop.addEventListener('click', async () => {
+      if (!await ask({ title: 'Убрать файл ролика?', text: 'Сам ролик останется в списке, но на сайте вместо видео будет ссылка на пост.', yes: 'Убрать файл', danger: true })) return;
       try {
         await ownerCall('DELETE', `/api/owner/videos/${encodeURIComponent(Number(v.id))}/file`);
         v.video_file_url = null;
