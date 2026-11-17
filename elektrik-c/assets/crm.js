@@ -212,7 +212,7 @@ function crmDrawDue() {
       const what = (o.items || []).map(i => i.title).filter(Boolean).join(', ');
       return el('li', {}, [
         el('button', { type: 'button', class: 'crm-due-o', onclick: () => { if (typeof openOrder === 'function') openOrder(o.number, true); } }, [
-          el('b', { text: o.name || 'Клиент' }),
+          el('b', { text: o.name && o.name !== 'Клиент' ? o.name : 'Без имени' }),
           el('span', { text: [what, crmWhen(o.callback_at)].filter(Boolean).join(' · ') }),
         ]),
         el('a', { class: 'btn send sm crm-due-call', href: `tel:${crmDigits(o.phone) ? `+${crmDigits(o.phone)}` : ''}`, 'aria-label': `Позвонить ${o.name || 'клиенту'}` }, [icon('phone'), el('span', { text: 'Позвонить' })]),
@@ -407,7 +407,7 @@ async function crmLoadServices() {
 async function crmSeed(btn) {
   btn.disabled = true;
   btn.setAttribute('aria-busy', 'true');
-  const items = CRM_CFG.services.map((s, k) => ({ slug: s.slug, title: s.title, price_from: s.price_from, price_text: s.price_text, published: true, position: k }));
+  const items = CRM_CFG.services.map(s => ({ slug: s.slug, title: s.title, price_from: s.price_from, price_text: s.price_text, published: true }));
   try {
     const data = await auth('PUT', '/api/owner/services', { items });
     crm.services = ((data && data.items) || items).slice().sort((a, b) => (a.position || 0) - (b.position || 0));
@@ -696,7 +696,7 @@ function crmDrawTg() {
   const t = crm.tg || {};
   const h = el('h2', { text: 'Уведомления в Telegram' });
   if (!t.enabled) {
-    box.replaceChildren(h, el('p', { class: 'hint', text: 'Бот ещё не подключён администратором. Как только его включат, здесь появится кнопка «Подключить Telegram», и новые заявки будут приходить вам в телефон.' }));
+    box.replaceChildren(h, el('p', { class: 'hint', text: 'Бот для уведомлений не настроен. Как его подключить, написано в инструкции, раздел «Уведомления о заявках в Telegram».' }));
     return;
   }
   const chats = t.chats || [];

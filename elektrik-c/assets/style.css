@@ -895,3 +895,34 @@ legend.fh{float:left}
 .d-call b{font-size:clamp(14px,4.3vw,18px);font-stretch:105%}
 .d-call .i{flex:none}
 @media (max-width:400px){.d-wa{flex:0 0 56px!important;padding:0!important}.d-wa>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.d-wa .i{width:26px;height:26px}}
+.hs-s{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--ease)}
+.hs-s.on{opacity:1}
+.hs-s img{width:100%;height:100%;object-fit:cover}
+.hs-s:first-child img{object-position:62% 50%}
+.hs-s:nth-child(2) img{object-position:50% 45%}
+.hs{touch-action:pan-y}
+.hs-dots{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(15,29,67,.45);backdrop-filter:blur(6px)}
+.hs-dots button{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:width .3s var(--ease),background .3s}
+.hs-dots button.on{width:22px;border-radius:6px;background:var(--y)}
+@media (max-width:860px){.hs-s:first-child img{object-position:50% 30%}}
+.lhero-ph.ban{aspect-ratio:auto}
+.lhero-ph.ban img{object-fit:contain}
+.ldoc{background:#fff}
+.ldoc-in{max-width:880px}
+.ldoc-t{font-size:clamp(26px,3.2vw,42px);font-stretch:85%;text-transform:uppercase;line-height:1.05;margin-bottom:22px}
+.ldoc-h{font-size:clamp(20px,2vw,26px);font-stretch:90%;text-transform:uppercase;margin:38px 0 14px;color:var(--blue)}
+.ldoc p{font-size:17px;line-height:1.6;color:var(--ink);margin:0 0 14px;max-width:70ch}
+.ldoc-ul{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:10px}
+.ldoc-ul li{display:flex;gap:12px;align-items:flex-start;background:var(--soft);border-radius:16px;padding:14px 16px;font-size:16.5px;line-height:1.45}
+.ldoc-ul .i{flex:none;width:22px;height:22px;color:var(--blue);margin-top:1px}
+.ldoc-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 18px}
+.ldoc-c{background:var(--soft);border-radius:20px;padding:20px 22px}
+.ldoc-c b{display:block;font-size:17px;font-weight:880;font-stretch:90%;text-transform:uppercase;margin-bottom:8px;color:var(--ink)}
+.ldoc-c p{font-size:15.5px;margin:0;color:var(--muted)}
+.ldoc-q{margin-top:26px!important;padding:22px 24px;border-radius:20px;background:var(--blue);color:#fff!important;font-weight:700;font-size:18px!important}
+@media (max-width:700px){.ldoc-cards{grid-template-columns:1fr}.ldoc p{font-size:16px}.ldoc-ul li{font-size:15.5px;padding:12px 14px}}
+@media (max-width:700px){.ldoc-t{font-size:clamp(19px,6.2vw,30px)}.ldoc-h{font-size:clamp(17px,5vw,22px)}}
+.hero-tri::before{display:none}
+.logo .mk{position:relative}
+.logo .mk::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.9) 50%,transparent 65%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:url(../img/mark-b.webp) center/contain no-repeat;mask:url(../img/mark-b.webp) center/contain no-repeat;animation:logoshine 4.5s var(--ease-io) 1.5s infinite;pointer-events:none}
+@keyframes logoshine{0%{background-position:150% 0}35%,100%{background-position:-50% 0}}

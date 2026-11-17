@@ -1,6 +1,6 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const API = (document.body.dataset.api || '').replace(/\/+$/, '');
+const API = (document.body.dataset.api || location.origin).replace(/\/+$/, '');
 const KEY = 'elektrik-owner-session';
 const DRAFT = 'elektrik-owner-draft';
 const NET = 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.';
@@ -628,7 +628,7 @@ function drawDetail(o) {
       ]),
       pt.titles.length ? sec(pt.titles.length > 1 ? 'Услуги' : 'Услуга', [el('ul', { class: 'od-tags' }, pt.titles.map(t => el('li', { text: t })))]) : null,
       pt.note ? sec('Комментарий клиента', [el('p', { class: 'od-cm', text: pt.note })]) : null,
-      pt.where || pt.come ? sec('Где машина', [el('p', { class: 'od-cm', text: pt.come ? 'Приедет сам в бокс' : pt.where })]) : null,
+      pt.where || pt.come ? sec('Где машина', [el('p', { class: 'od-cm', text: pt.come ? 'Приедет сам в автосервис' : pt.where })]) : null,
       pt.come && pt.when ? sec('Когда', [el('p', { class: 'od-cm', text: pt.when.replace(/^./, c => c.toUpperCase()) })]) : null,
       pt.car ? sec('Машина', [el('p', { class: 'od-cm', text: pt.car })]) : null,
       window.crmDetail ? crmDetail(o, crmChanged) : null,
@@ -684,7 +684,17 @@ function drawVideos() {
   if (focused) {
     const id = act.closest('.vi').dataset.id;
     $$('.vi', ul).forEach(li => {
-      if (li.dataset.id === id) return;
+      if (li.dataset.id === id) {
+        const cur = videos.find(x => String(x.id) === id);
+        if (!cur) return;
+        const fresh = videoRow(cur, videos.indexOf(cur));
+        const box = $('.vf', li);
+        const freshBox = $('.vf', fresh);
+        if (box && freshBox && !box.contains(act)) box.replaceWith(freshBox);
+        const olds = [...li.children];
+        [...fresh.children].forEach((c, k) => { if (olds[k] && !olds[k].contains(act)) olds[k].replaceWith(c); });
+        return;
+      }
       const v = videos.find(x => String(x.id) === li.dataset.id);
       if (v) li.replaceWith(videoRow(v, videos.indexOf(v)));
     });
@@ -723,7 +733,7 @@ function schedulePoll() {
 }
 
 function ownerCall(method, path) {
-  return fetch(`${API}${path}`, { method, headers: { Accept: 'application/json', Authorization: `Bearer ${owner.token()}` }, credentials: 'omit', cache: 'no-store' })
+  return fetch(`${API}${path}`, { method, headers: { Accept: 'application/json', Authorization: `Bearer ${session}` }, credentials: 'omit', cache: 'no-store' })
     .then(async r => {
       let data = null;
       try { data = await r.json(); } catch (e) { data = null; }
@@ -741,7 +751,7 @@ function uploadFile(v, f, onProgress) {
     if (f.size > FILE_MAX) { fail('Файл больше 100 МБ. Сожмите или обрежьте ролик'); return; }
     const x = new XMLHttpRequest();
     x.open('POST', `${API}/api/owner/videos/${encodeURIComponent(Number(v.id))}/file`);
-    x.setRequestHeader('Authorization', `Bearer ${owner.token()}`);
+    x.setRequestHeader('Authorization', `Bearer ${session}`);
     x.setRequestHeader('Accept', 'application/json');
     x.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
     x.onload = () => {

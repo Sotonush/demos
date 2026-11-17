@@ -2,7 +2,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const WA = document.body.dataset.wa;
 const PAGE = document.body.dataset.page;
-const API = (document.body.dataset.api || '').replace(/\/+$/, '');
+const API = (document.body.dataset.api || location.origin).replace(/\/+$/, '');
 const LOCAL_VIDEOS = (document.body.dataset.vlocal || '').split(' ').filter(Boolean);
 const motion = true;
 const mobile = matchMedia('(max-width: 720px)');
@@ -484,6 +484,34 @@ function kinetic() {
   });
 }
 
+function heroSlider() {
+  const box = $('[data-hs]');
+  if (!box) return;
+  const slides = $$('.hs-s', box);
+  const dots = $$('.hs-dots button', box);
+  if (slides.length < 2) return;
+  let i = 0;
+  let timer = null;
+  const show = n => {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.classList.toggle('on', k === i));
+    dots.forEach((d, k) => { d.classList.toggle('on', k === i); d.setAttribute('aria-pressed', String(k === i)); });
+  };
+  const start = () => { clearInterval(timer); timer = setInterval(() => show(i + 1), 5000); };
+  dots.forEach((d, k) => d.addEventListener('click', () => { show(k); start(); }));
+  let x0 = null;
+  box.addEventListener('pointerdown', e => { x0 = e.clientX; });
+  box.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0;
+    x0 = null;
+    if (Math.abs(dx) > 40) { show(i + (dx < 0 ? 1 : -1)); start(); }
+  });
+  box.addEventListener('pointercancel', () => { x0 = null; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearInterval(timer); else start(); });
+  start();
+}
+
 function reveal() {
   const root = document.documentElement;
   if (!motion || !('IntersectionObserver' in window)) return;
@@ -575,7 +603,7 @@ function book() {
     mode: () => Boolean(st.mode && place()),
     tel: () => tel().length === 12,
   };
-  const modeText = () => (st.mode === 'call' ? `Машина стоит: ${place() || '…'}` : st.mode === 'come' ? `Приеду сам в бокс: ${place() || '…'}` : '');
+  const modeText = () => (st.mode === 'call' ? `Машина стоит: ${place() || '…'}` : st.mode === 'come' ? `Приеду сам в автосервис: ${place() || '…'}` : '');
   const plain = (withPhone = true) => {
     const l = ['Здравствуйте! Нужна помощь.', `Что случилось: ${problem() || '…'}`];
     if (st.mode) l.push(modeText());
@@ -702,7 +730,7 @@ function book() {
     $('span', send).textContent = 'Отправляем…';
     if (!st.rid) st.rid = window.LeadsClient.create({ api: API }).newRequestId();
     const items = (titles().length ? titles() : ['Заявка автоэлектрику']).slice(0, 8).map(t => ({ title: t.slice(0, 120) }));
-    const comment = [val('#note') && `Комментарий: ${val('#note')}`, st.mode === 'come' ? 'Где машина: Приедет сам в бокс' : `Где машина: ${place()}`, st.mode === 'come' && st.soon && `Когда: ${st.soon.toLowerCase()}`, val('#car') && `Авто: ${val('#car')}`].filter(Boolean).join('\n').slice(0, 1000);
+    const comment = [val('#note') && `Комментарий: ${val('#note')}`, st.mode === 'come' ? 'Где машина: Приедет сам в автосервис' : `Где машина: ${place()}`, st.mode === 'come' && st.soon && `Когда: ${st.soon.toLowerCase()}`, val('#car') && `Авто: ${val('#car')}`].filter(Boolean).join('\n').slice(0, 1000);
     try {
       const res = await window.LeadsClient.create({ api: API }).submit({
         kind: 'order',
@@ -715,7 +743,7 @@ function book() {
         website: form.website.value,
       });
       goal('form_submit', `запись: ${problem()}`);
-      $('#done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит в течение 5 минут на '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
+      $('#done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит вам на номер '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
       $('#done-wa').href = `https://wa.me/${WA}?text=${encodeURIComponent(plain())}`;
       st.rid = '';
       show('done');
@@ -831,7 +859,7 @@ function master() {
         website: form.website.value,
       });
       goal('form_submit', 'вызов мастера');
-      $('#m-done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит в течение 5 минут на '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
+      $('#m-done-t').replaceChildren(document.createTextNode('Заявка принята. Мастер перезвонит вам на номер '), el('span', { class: 'nw', text: phoneFormat(tel()) }));
       st.rid = '';
       show('done');
     } catch (err) {
@@ -846,6 +874,7 @@ function master() {
 }
 
 kinetic();
+heroSlider();
 reveal();
 header();
 dock();
