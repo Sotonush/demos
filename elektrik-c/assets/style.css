@@ -928,3 +928,6 @@ legend.fh{float:left}
 .logo .mk{position:relative}
 .logo .mk::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.9) 50%,transparent 65%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:url(../img/mark-b.webp) center/contain no-repeat;mask:url(../img/mark-b.webp) center/contain no-repeat;animation:logoshine 4.5s var(--ease-io) 1.5s infinite;pointer-events:none}
 @keyframes logoshine{0%{background-position:150% 0}35%,100%{background-position:-50% 0}}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+img,video,svg{-webkit-user-drag:none;user-drag:none}
+input,textarea,select,[contenteditable],.facts dd,a[href^="tel:"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}

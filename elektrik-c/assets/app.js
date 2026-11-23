@@ -8,8 +8,12 @@ const motion = true;
 const mobile = matchMedia('(max-width: 720px)');
 
 window.dataLayer = window.dataLayer || [];
+const YM = Number(document.body.dataset.ym || 0);
 function goal(name, label) {
-  window.dataLayer.push({ event: name, page: PAGE, label: label || '' });
+  const params = { page: PAGE, label: label || '' };
+  window.dataLayer.push({ event: name, ...params });
+  if (YM && typeof window.ym === 'function') window.ym(YM, 'reachGoal', name, params);
+  if (typeof window.gtag === 'function') window.gtag('event', name, params);
 }
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-goal]');
