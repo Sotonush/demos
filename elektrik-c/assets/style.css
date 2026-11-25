@@ -931,3 +931,6 @@ legend.fh{float:left}
 body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 img,video,svg{-webkit-user-drag:none;user-drag:none}
 input,textarea,select,[contenteditable],.facts dd,a[href^="tel:"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.gal-txt{max-width:72ch;margin:0 0 clamp(18px,2.4vw,28px);color:var(--muted);line-height:1.6}
+.gal-txt a{color:inherit;text-decoration:underline;text-decoration-color:rgba(48,104,199,.35);text-underline-offset:3px}
+.gal-txt a:hover{color:var(--blue)}
