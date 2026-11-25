@@ -178,7 +178,7 @@ function setRecovery(on) {
   c.classList.toggle('rc', on);
   $('#code-l').textContent = on ? 'Резервный код' : 'Код из приложения';
   $('#totp-h').textContent = on ? 'Резервный код' : 'Код из приложения';
-  $('#totp-note').textContent = on ? 'Введите один из резервных кодов, которые вы сохранили при подключении. Каждый срабатывает один раз.' : 'Откройте Google Authenticator и введите 6 цифр для Электрик.Kg.';
+  $('#totp-note').textContent = on ? 'Введите один из резервных кодов, которые вы сохранили при подключении. Каждый срабатывает один раз.' : 'Откройте Google Authenticator и введите 6 цифр для Elektrik.KG.';
   $('#use-recovery').textContent = on ? 'Ввести код из приложения' : 'Нет телефона? Введите резервный код';
   $('#use-recovery').setAttribute('aria-pressed', String(on));
   $('#totp-e').textContent = '';
@@ -525,7 +525,7 @@ async function loadOrders(fresh) {
   const nc = (summary && summary.new_count) ?? data.new_count ?? 0;
   $('#newc').hidden = !nc;
   $('#newc').textContent = nc;
-  document.title = `${nc ? `(${nc}) ` : ''}Кабинет | Электрик.Kg`;
+  document.title = `${nc ? `(${nc}) ` : ''}Кабинет | Elektrik.KG`;
   if (selected !== null) {
     detailCache.delete(selected);
     if (orders.some(o => o.number === selected) || $('#detail').classList.contains('open')) openOrder(selected, false);
